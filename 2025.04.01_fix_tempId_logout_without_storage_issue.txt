@@ -1,0 +1,32 @@
+2025.04.01_fix_tempId_logout_without_storage_issue.txt
+
+Issue Analysis
+Inconsistent tempId Handling:
+- In GuestLogin.jsx, we correctly check if a tempId exists in localStorage. However, the tempId was not properly passed in API service calls.
+- In the logout logic inside Home.jsx, comments suggest that we should retain the tempId, but the actual implementation is unclear.
+
+Backend Handling:
+- The logic in tempUserController.js seems correct—it checks the provided tempId from the client. We added more logging to assist with diagnostics.
+
+Logout Handling:
+- The logoutUser controller clears the JWT cookie but does not affect the tempId stored in localStorage. However, there might be parts of the frontend code that accidentally clear localStorage.tempId.
+
+Solution
+Frontend API Call:
+- Modified the apiService.auth.createTempUser method to accept and pass tempId to the backend.
+
+GuestLogin Logic:
+- Added log statements to help trace the tempId transmission process.
+
+Logout Logic:
+- Updated the handleLogout function in Home.jsx to explicitly retain the tempId in localStorage. Log statements were added for clarity.
+
+Backend (tempUserController):
+- Additional logs were added to help diagnose tempId-related issues.
+
+These changes should fix the issue of the temporary user ID being lost after logout. Now, when users:
+- Visit the app for the first time and log in as a guest, a new tempId is created and stored in localStorage.
+- Log out, the tempId remains in localStorage.
+- Log in again as a guest, the stored tempId is sent to the backend, which verifies and returns the same temporary user.
+
+This ensures that the user continues using the same temporary account across sessions without creating a new one each time—matching the behavior described in the README.

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Focus App - track your focus</title>
+    <!-- Environment variable injection - important: will be replaced during the build process -->
+    <script>
+      // If not replaced during the build process, use the default configurationg the build process, use the default configuration
+      window.ENV = window.ENV || {
+        VITE_API_URL: "https://focusfinalproject-backend-original-repo.onrender.com",
+      };
+      console.log("Initial environment setup completed:", window.ENV);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,575 @@
+{
+  "info": {
+    "name": "Focus App API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "description": "創建正式用戶賬戶",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"tempId\": \"temp_abc123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "用戶登錄",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let res = pm.response.json();",
+              "pm.environment.set(\"token\", res.token);",
+              "pm.environment.set(\"userId\", res.userId);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Temp User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/temp-users",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "temp-users"
+          ]
+        },
+        "description": "創建臨時用戶",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tempId\": \"temp_abc123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Goal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/goals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "goals"
+          ]
+        },
+        "description": "創建新目標",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"user_123\",\n  \"title\": \"My Goal\",\n  \"description\": \"Learn MERN Stack\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let res = pm.response.json();",
+              "pm.environment.set(\"goalId\", res._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Progress Record",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/progress",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "progress"
+          ]
+        },
+        "description": "創建進度記錄",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"goalId\": \"goal_123\",\n  \"userId\": \"user_123\",\n  \"records\": [\n    {\n      \"content\": \"Completed task A\",\n      \"duration\": 30,\n      \"mood\": \"happy\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let res = pm.response.json();",
+              "pm.environment.set(\"progressId\", res._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Goal Progress",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/progress?goalId=goal_123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "progress?goalId=goal_123"
+          ]
+        },
+        "description": "獲取目標進度"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Progress Record",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/progress/progress_123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "progress",
+            "progress_123"
+          ]
+        },
+        "description": "更新進度記錄",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"content\": \"Updated task A\",\n      \"duration\": 45,\n      \"mood\": \"focused\"\n    }\n  ],\n  \"summary\": \"Improved productivity\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add Record Item",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/progress/progress_123/records",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "progress",
+            "progress_123",
+            "records"
+          ]
+        },
+        "description": "添加記錄項",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"New task B\",\n  \"duration\": 20,\n  \"mood\": \"neutral\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Checkpoint Status",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/progress/progress_123/checkpoints/checkpoint_1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "progress",
+            "progress_123",
+            "checkpoints",
+            "checkpoint_1"
+          ]
+        },
+        "description": "更新檢查點狀態",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"isCompleted\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Progress Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/progress/summary?goalId=goal_123&startDate=2024-01-01&endDate=2024-01-31",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "progress",
+            "summary?goalId=goal_123&startDate=2024-01-01&endDate=2024-01-31"
+          ]
+        },
+        "description": "獲取進度摘要"
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Report",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/reports/generate",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "reports",
+            "generate"
+          ]
+        },
+        "description": "生成報告",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"goalId\": \"goal_123\",\n  \"userId\": \"user_123\",\n  \"type\": \"weekly\",\n  \"period\": {\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-01-07\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "let res = pm.response.json();",
+              "pm.environment.set(\"reportId\", res._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Reports for Goal",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/reports?goalId=goal_123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "reports?goalId=goal_123"
+          ]
+        },
+        "description": "獲取目標報告"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Report Details",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/reports/report_123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "reports",
+            "report_123"
+          ]
+        },
+        "description": "獲取報告詳情"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Report Content",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/reports/report_123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "reports",
+            "report_123"
+          ]
+        },
+        "description": "更新報告內容",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Updated report content\",\n  \"insights\": [\n    \"Insight A\",\n    \"Insight B\"\n  ],\n  \"recommendations\": [\n    \"Do more A\",\n    \"Avoid B\"\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Report",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/reports/report_123",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "reports",
+            "report_123"
+          ]
+        },
+        "description": "刪除報告"
+      },
+      "response": []
+    },
+    {
+      "name": "Export Report as PDF",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/export/reports/report_123/pdf",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "export",
+            "reports",
+            "report_123",
+            "pdf"
+          ]
+        },
+        "description": "導出報告為 PDF"
+      },
+      "response": []
+    }
+  ]
+}

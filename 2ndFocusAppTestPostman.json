@@ -1,0 +1,146 @@
+{
+    "info": {
+      "name": "Focus App API Tests v2",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "1. User Management",
+        "item": [
+          {
+            "name": "Register User",
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"tempId\": \"{{tempId}}\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:5050/api/auth/register",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "auth", "register"]
+              },
+              "description": "Creates a new user account with optional link to temporary user data"
+            }
+          },
+          {
+            "name": "Login User",
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:5050/api/auth/login",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "auth", "login"]
+              },
+              "description": "Authenticates a user and returns a JWT token"
+            }
+          },
+          {
+            "name": "Get User Info",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:5050/api/auth/me/:userId",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "auth", "me", ":userId"],
+                "variable": [{"key": "userId", "value": "{{userId}}"}]
+              },
+              "description": "Retrieves detailed information for a specific user"
+            }
+          },
+          {
+            "name": "Logout User",
+            "request": {
+              "method": "POST",
+              "url": {
+                "raw": "http://localhost:5050/api/auth/logout",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "auth", "logout"]
+              },
+              "description": "Logs out the current user by clearing the authentication token"
+            }
+          }
+        ]
+      },
+      {
+        "name": "2. TempUser API",
+        "item": [
+          {
+            "name": "Create Temp User",
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "url": {
+                "raw": "http://localhost:5050/api/temp-users",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "temp-users"]
+              },
+              "description": "Creates a new temporary user with limited features and 21-day expiration"
+            }
+          },
+          {
+            "name": "Get Temp User",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:5050/api/temp-users/:tempId",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "temp-users", ":tempId"],
+                "variable": [{"key": "tempId", "value": "{{tempId}}"}]
+              },
+              "description": "Retrieves information for a specific temporary user"
+            }
+          },
+          {
+            "name": "Add Goal to Temp User",
+            "request": {
+              "method": "POST",
+              "header": [{"key": "Content-Type", "value": "application/json"}],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"title\": \"Sample Goal for Temp User\",\n  \"description\": \"This is a sample goal for testing purposes\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:5050/api/temp-users/:tempId/goals",
+                "protocol": "http",
+                "host": ["localhost"],
+                "port": "5050",
+                "path": ["api", "temp-users", ":tempId", "goals"],
+                "variable": [{"key": "tempId", "value": "{{tempId}}"}]
+              },
+              "description": "Adds a single goal to a temporary user (limited to one goal only)"
+            }
+          }
+        ]
+      }
+    ],
+    "variable": [
+      {"key": "userId", "value": ""},
+      {"key": "tempId", "value": ""},
+      {"key": "goalId", "value": ""},
+      {"key": "progressId", "value": ""},
+      {"key": "otherUserId", "value": ""}
+    ]
+  }

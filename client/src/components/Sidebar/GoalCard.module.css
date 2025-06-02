@@ -1,0 +1,462 @@
+.goalCard {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  width: 100%;
+  min-width: 220px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.goalCard:hover {
+  background-color: #fff9e1;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.goalCard.active {
+  background-color: rgba(13, 94, 109, 0.05);
+}
+
+.goalCardHeader {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.goalTitle {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #0D5E6D;
+  min-width: 0; /* Allow text to shrink */
+}
+
+.titleActions {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.goalTitleText {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0.5rem 0;
+  line-height: 1.4;
+  min-height: 1.4em; /* At least one line */
+  max-height: none; /* Allow full height on mobile */
+  display: -webkit-box;
+  -webkit-line-clamp: initial; /* No line clamp on mobile */
+  -webkit-box-orient: vertical;
+}
+
+.priorityContainer {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  width: 100%;
+  padding-right: 30px; /* Increased from 15px to 30px */
+  box-sizing: border-box;
+}
+
+.priorityChip {
+  height: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 30px; /* Increased from 15px to 30px */
+}
+
+.priorityChip:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.priorityChip.priorityHigh {
+  background-color: rgba(255, 59, 48, 0.2); /* Lighter red background */
+  color: #c62828; /* Darker red text */
+  border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+.priorityChip.priorityMedium {
+  background-color: rgba(255, 204, 0, 0.25); /* Lighter yellow background */
+  color: #a17400; /* Darker yellow text */
+  border: 1px solid rgba(255, 204, 0, 0.35);
+}
+
+.priorityChip.priorityLow {
+  background-color: rgba(52, 199, 89, 0.2); /* Lighter green background */
+  color: #1e8e3e; /* Darker green text */
+  border: 1px solid rgba(52, 199, 89, 0.3);
+}
+
+/* Tablet layout (600px - 900px) */
+@media (min-width: 600px) {
+  .goalCardHeader {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .goalTitle {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .goalTitleText {
+    margin: 0 8px;
+    flex: 1;
+    min-width: 0; /* Allow text to shrink */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show up to two lines on tablet - increased from one */
+    -webkit-box-orient: vertical;
+    max-height: 2.8em; /* 2 lines × 1.4 line-height */
+  }
+  
+  .priorityContainer {
+    margin-top: 0;
+    margin-left: auto;
+    width: auto;
+    justify-content: flex-end;
+    min-width: 100px; /* Ensure enough space to display priority */
+  }
+  
+  .dueDate {
+    width: auto; /* Adjust width for larger screens */
+    margin-top: 0;
+  }
+}
+
+/* Desktop layout (> 900px) */
+@media (min-width: 900px) {
+  .goalCard,
+  .goalCardSelected {
+    min-width: 15%;
+    width: 100%;
+  }
+  
+  .goalCard {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+  
+  .goalTitle {
+    display: grid;
+    grid-template-columns: 15% 60% 25%;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .titleActions {
+    width: auto;
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+  
+  .goalTitleText {
+    grid-column: 2;
+    padding: 0 8px;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show up to two lines on desktop */
+    -webkit-box-orient: vertical;
+    max-height: 2.8em; /* 2 lines × 1.4 line-height */
+  }
+  
+  .priorityContainer {
+    grid-column: 3;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+  
+  .cardFooter {
+    max-width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .dueDate {
+    margin-right: 8px; /* Add some space between date and actions */
+    flex-shrink: 0; /* Prevent date from shrinking */
+  }
+}
+
+.cardContent {
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.7);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-right: 30px; /* Increased from 15px to 30px */
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dueDate {
+  display: flex;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.75rem;
+  width: 100%; /* Ensure full width on mobile */
+  margin-top: 4px; /* Add some space */
+  white-space: nowrap; /* Prevent date from wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dateIcon {
+  font-size: 0.875rem;
+  margin-right: 4px;
+  color: #0D5E6D;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.iconButton {
+  padding: 4px;
+  color: #0D5E6D;
+  transition: all 0.2s ease;
+}
+
+.iconButton:hover {
+  background-color: rgba(13, 94, 109, 0.1);
+  transform: scale(1.1);
+  color: #0a4a56;
+}
+
+.progressContainer {
+  margin-top: 8px;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background-color: #4CD7D0;
+  transition: width 0.3s ease;
+}
+
+/* Re-add these classes to ensure they don't get overridden */
+.priorityHigh {
+  background-color: rgba(255, 127, 102, 0.2);
+  color: #FF7F66;
+  border: 1px solid rgba(255, 127, 102, 0.5);
+}
+
+.priorityMedium {
+  background-color: rgba(76, 215, 208, 0.2);
+  color: #0D5E6D;
+  border: 1px solid rgba(76, 215, 208, 0.5);
+}
+
+.priorityLow {
+  background-color: rgba(13, 94, 109, 0.1);
+  color: #0D5E6D;
+  border: 1px solid rgba(13, 94, 109, 0.3);
+}
+
+.archivedSection {
+  margin-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding-top: 16px;
+  width: 100%;
+  min-width: 220px;
+  box-sizing: border-box;
+  overflow: hidden; /* Hide scrollbar */
+}
+
+.archivedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  cursor: pointer;
+  width: 100%;
+  overflow: hidden; /* Hide scrollbar */
+}
+
+.archivedTitle {
+  display: flex;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.9rem;
+  font-weight: 500;
+  overflow: hidden; /* Hide scrollbar */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archivedCount {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.archivedIcon {
+  transition: transform 0.3s ease;
+}
+
+.archivedIcon.expanded {
+  transform: rotate(180deg);
+}
+
+.goalCardSelected {
+  border: 2px solid #fbc02d;
+  background-color: #fffde7;
+  min-width: 220px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Add Goal Button Styles */
+.addGoalButton {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #0D5E6D;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin-bottom: 16px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.addGoalButton:hover {
+  background-color: #0a4a56;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.addGoalButton.disabled {
+  background-color: rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.26);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.addGoalButton.disabled:hover {
+  background-color: rgba(0, 0, 0, 0.12);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Animation for new cards */
+.goalCard {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quoteText {
+  font-size: 1.5rem;
+  color: #000000;
+}
+
+.tooltipText {
+  font-size: 0.875rem;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+/* Tablet and Desktop layout adjustments */
+@media (min-width: 600px) {
+  .archivedSection,
+  .archivedHeader,
+  .archivedTitle {
+    min-width: 220px;
+  }
+}
+
+@media (min-width: 900px) {
+  .archivedSection,
+  .archivedHeader,
+  .archivedTitle {
+    min-width: 15%;
+    width: 100%;
+  }
+}
+
+/* Match dropdown menu colors with tag colors */
+.priorityHighMenuItem {
+  background-color: rgba(255, 220, 218, 0.1) !important; /* Lighter red */
+  color: #333 !important;
+}
+.priorityHighMenuItem:hover {
+  background-color: rgba(255, 59, 48, 0.2) !important;
+}
+
+.priorityMediumMenuItem {
+  background-color: rgba(255, 245, 186, 0.1) !important; /* Lighter yellow */
+  color: #333 !important;
+}
+.priorityMediumMenuItem:hover {
+  background-color: rgba(255, 204, 0, 0.2) !important;
+}
+
+.priorityLowMenuItem {
+  background-color: rgba(200, 255, 210, 0.1) !important; /* Lighter green */
+  color: #333 !important;
+}
+.priorityLowMenuItem:hover {
+  background-color: rgba(52, 199, 89, 0.2) !important;
+} 

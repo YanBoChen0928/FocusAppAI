@@ -1,0 +1,16 @@
+Key Changes:
+
+a) Frontend – GuestLogin.jsx:
+Modified the handleGuestLogin function to always send a request to the backend, regardless of whether a tempId already exists.
+The key update is passing the locally stored tempId as the existingTempId parameter to the backend, allowing the server to verify its validity and return the corresponding user info.
+
+b) Backend – tempUserRoutes.js:
+Added logic to handle the existingTempId sent from the client.
+First, it checks if the provided tempId exists; if it does, it returns the existing user.
+Also added detailed logging for easier debugging and tracking.
+
+c) Frontend – Home.jsx:
+Updated the guest logout logic to no longer delete the temp user data.
+Key change: Keep the tempId in localStorage while only clearing the cookie.
+This allows the user to log in again using the same temp account, maintaining data continuity.
+

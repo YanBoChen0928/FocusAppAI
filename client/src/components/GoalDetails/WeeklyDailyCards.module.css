@@ -1,0 +1,123 @@
+/* Mobile first design */
+.container {
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  color: #0D5E6D;
+}
+
+.weekControls {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.weekTitle {
+  margin: 0 8px;
+  font-size: 0.9rem;
+}
+
+.cardsContainer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  margin-bottom: 1rem;
+}
+
+/* Ensure cards maintain a consistent width */
+.cardsContainer > * {
+  min-width: 0; /* Allow children to shrink to prevent overflow */
+  width: 100%;
+}
+
+/* Progress container */
+.progressContainer {
+  margin-top: 1rem;
+}
+
+/* Card wrapper */
+.cardWrapper {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Today button */
+.todayButton {
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+  align-self: flex-end;
+}
+
+/* Tablet layout */
+@media (min-width: 600px) {
+  .container {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .title {
+    margin-bottom: 0;
+    font-size: 1.2rem;
+  }
+  
+  .weekControls {
+    width: auto;
+    margin-top: 0;
+  }
+  
+  .weekTitle {
+    font-size: 1rem;
+  }
+  
+  .cardsContainer {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  
+  .todayButton {
+    margin-right: 1rem;
+  }
+}
+
+/* Desktop layout */
+@media (min-width: 900px) {
+  .cardsContainer {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+  }
+  
+  .title {
+    font-size: 1.25rem;
+  }
+} 

@@ -1,0 +1,775 @@
+{
+  "info": {
+    "_postman_id": "3a957c40-c21d-4f81-9c64-bea0d70e6b6c",
+    "name": "Focus App API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. User Management",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"tempId\": \"temp_12345\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Creates a new user account with optional link to temporary user data"
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticates a user and returns a JWT token"
+          }
+        },
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/auth/google",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "auth", "google"]
+            },
+            "description": "Initiates the Google OAuth login flow, which redirects to the Google login page"
+          }
+        },
+        {
+          "name": "Google OAuth Callback (Simulation)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/auth/google/callback?code=test_authorization_code",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "auth", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "test_authorization_code",
+                  "description": "Authorization code returned by Google (simulated)"
+                }
+              ]
+            },
+            "description": "Simulates handling the Google OAuth callback, this endpoint is not meant to be called manually in practice"
+          }
+        },
+        {
+          "name": "Get User Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/auth/me/:userId",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "auth", "me", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Retrieves detailed information for a specific user"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. TempUser API",
+      "item": [
+        {
+          "name": "Create Temp User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/temp-users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "temp-users"]
+            },
+            "description": "Creates a new temporary user with limited features and 21-day expiration"
+          }
+        },
+        {
+          "name": "Get Temp User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/temp-users/:tempId",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "temp-users", ":tempId"],
+              "variable": [
+                {
+                  "key": "tempId",
+                  "value": "{{tempId}}",
+                  "description": "Temp User ID"
+                }
+              ]
+            },
+            "description": "Retrieves information for a specific temporary user"
+          }
+        },
+        {
+          "name": "Add Goal to Temp User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Learn React as Temp User\",\n  \"description\": \"Complete React tutorial before registering a full account\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/temp-users/:tempId/goals",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "temp-users", ":tempId", "goals"],
+              "variable": [
+                {
+                  "key": "tempId",
+                  "value": "{{tempId}}",
+                  "description": "Temp User ID"
+                }
+              ]
+            },
+            "description": "Adds a single goal to a temporary user (limited to one goal only)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Goal Management",
+      "item": [
+        {
+          "name": "Create Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"Learn React\",\n  \"description\": \"Complete React official tutorial and build a sample application\",\n  \"priority\": \"High\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/goals",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals"]
+            },
+            "description": "Creates a new goal for a registered user"
+          }
+        },
+        {
+          "name": "Get User Goals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/goals/user/:userId",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", "user", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}",
+                  "description": "User ID"
+                }
+              ]
+            },
+            "description": "Retrieves all goals for a specific user"
+          }
+        },
+        {
+          "name": "Get Goal Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/goals/detail/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", "detail", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Retrieves detailed information for a specific goal"
+          }
+        },
+        {
+          "name": "Update Goal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Master React\",\n  \"description\": \"Complete React official tutorial and build a complete application\",\n  \"priority\": \"High\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/goals/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Updates basic information for an existing goal"
+          }
+        },
+        {
+          "name": "Update Goal Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/goals/:id/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Updates the status of a goal (e.g., active, completed)"
+          }
+        },
+        {
+          "name": "Add Goal Checkpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Complete React Hooks section\",\n  \"description\": \"Learn and practice React Hooks concepts\",\n  \"targetDate\": \"2023-04-15\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/goals/:id/checkpoints",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", ":id", "checkpoints"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Adds a milestone or checkpoint to a goal"
+          }
+        },
+        {
+          "name": "Update Goal Declaration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"I will become a skilled React developer\",\n  \"vision\": \"I see myself building complex React applications with confidence\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/goals/:id/declaration",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", ":id", "declaration"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Updates the declaration or vision statement for a goal"
+          }
+        },
+        {
+          "name": "Delete Goal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/goals/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "goals", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Permanently deletes a goal"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Progress Tracking",
+      "item": [
+        {
+          "name": "Create Progress Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"goalId\": \"{{goalId}}\",\n  \"userId\": \"{{userId}}\",\n  \"records\": [\n    {\n      \"content\": \"Learned React component basics today\",\n      \"duration\": 120,\n      \"mood\": \"Good\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/progress",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "progress"]
+            },
+            "description": "Creates a new progress record for a goal"
+          }
+        },
+        {
+          "name": "Get Goal Progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/progress?goalId={{goalId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "progress"],
+              "query": [
+                {
+                  "key": "goalId",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Retrieves all progress records for a specific goal"
+          }
+        },
+        {
+          "name": "Update Progress Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"content\": \"Learned React component basics and completed a mini project\",\n      \"duration\": 180,\n      \"mood\": \"Great\"\n    }\n  ],\n  \"summary\": \"Making good progress\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/progress/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "progress", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{progressId}}",
+                  "description": "Progress Record ID"
+                }
+              ]
+            },
+            "description": "Updates an existing progress record"
+          }
+        },
+        {
+          "name": "Add Record Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Completed React Hooks tutorial\",\n  \"duration\": 90,\n  \"mood\": \"Good\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/progress/:id/records",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "progress", ":id", "records"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{progressId}}",
+                  "description": "Progress ID"
+                }
+              ]
+            },
+            "description": "Adds a new item to an existing progress record"
+          }
+        },
+        {
+          "name": "Update Checkpoint Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isCompleted\": true\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/progress/:id/checkpoints/:checkpointId",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "progress", ":id", "checkpoints", ":checkpointId"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{progressId}}",
+                  "description": "Progress ID"
+                },
+                {
+                  "key": "checkpointId",
+                  "value": "{{checkpointId}}",
+                  "description": "Checkpoint ID"
+                }
+              ]
+            },
+            "description": "Updates the completion status of a checkpoint"
+          }
+        },
+        {
+          "name": "Get Progress Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/progress/summary?goalId={{goalId}}&startDate=2023-01-01&endDate=2023-12-31",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "progress", "summary"],
+              "query": [
+                {
+                  "key": "goalId",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2023-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2023-12-31"
+                }
+              ]
+            },
+            "description": "Retrieves a summary of progress for a goal within a specific date range"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Report Management",
+      "item": [
+        {
+          "name": "Generate Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"goalId\": \"{{goalId}}\",\n  \"userId\": \"{{userId}}\",\n  \"type\": \"weekly\",\n  \"period\": {\n    \"startDate\": \"2023-03-01\",\n    \"endDate\": \"2023-03-07\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/reports/generate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "reports", "generate"]
+            },
+            "description": "Generates a report for a goal based on progress records"
+          }
+        },
+        {
+          "name": "Get Reports for Goal",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/reports?goalId={{goalId}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "reports"],
+              "query": [
+                {
+                  "key": "goalId",
+                  "value": "{{goalId}}",
+                  "description": "Goal ID"
+                }
+              ]
+            },
+            "description": "Retrieves all reports for a specific goal"
+          }
+        },
+        {
+          "name": "Get Report Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/reports/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "reports", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{reportId}}",
+                  "description": "Report ID"
+                }
+              ]
+            },
+            "description": "Retrieves detailed information for a specific report"
+          }
+        },
+        {
+          "name": "Update Report Content",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated report content with manual edits\",\n  \"insights\": [\n    \"Insight 1: Progress has been consistent\",\n    \"Insight 2: More focus needed on practical exercises\"\n  ],\n  \"recommendations\": [\n    \"Recommendation 1: Spend more time on coding exercises\",\n    \"Recommendation 2: Review core concepts weekly\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5050/api/reports/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "reports", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{reportId}}",
+                  "description": "Report ID"
+                }
+              ]
+            },
+            "description": "Updates the content of an existing report"
+          }
+        },
+        {
+          "name": "Delete Report",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/reports/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "reports", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{reportId}}",
+                  "description": "Report ID"
+                }
+              ]
+            },
+            "description": "Permanently deletes a report"
+          }
+        },
+        {
+          "name": "Export Report as PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5050/api/export/reports/:id/pdf",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5050",
+              "path": ["api", "export", "reports", ":id", "pdf"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{reportId}}",
+                  "description": "Report ID"
+                }
+              ]
+            },
+            "description": "Exports a report as a PDF file"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "tempId",
+      "value": ""
+    },
+    {
+      "key": "goalId",
+      "value": ""
+    },
+    {
+      "key": "progressId",
+      "value": ""
+    },
+    {
+      "key": "reportId",
+      "value": ""
+    },
+    {
+      "key": "checkpointId",
+      "value": ""
+    }
+  ]
+} 

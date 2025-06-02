@@ -1,0 +1,29 @@
+Fix: Implement Reward Synchronization between GoalDeclaration and DailyCard
+
+This commit implements a robust reward synchronization system to ensure
+that when rewards are updated in the GoalDeclaration component, they are
+immediately reflected when opening a DailyCard.
+
+Key changes:
+
+1. Create a new Zustand store (rewardsStore.js) to:
+   - Store and manage reward data centrally
+   - Handle both daily rewards and declaration rewards
+   - Maintain proper priority with declaration rewards taking precedence
+
+2. Update GoalDeclaration.jsx to:
+   - Store rewards in Zustand when declarations are saved
+   - Ensure data is propagated to other components
+
+3. Update DailyCard.jsx to:
+   - Detect reward changes from the Zustand store
+   - Correctly pass current reward data to DailyCardRecord
+
+4. Update DailyCardRecord.jsx to:
+   - Prioritize rewards from Zustand store
+   - Stay in sync with goal declaration changes
+   - Update UI display when rewards change
+
+This implementation addresses the issue where updating a reward in the
+declaration (e.g., changing "testrewards" to "testrewards2") wasn't 
+immediately reflected when opening a daily card. 

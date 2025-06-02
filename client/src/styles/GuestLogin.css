@@ -1,0 +1,135 @@
+/* 
+* GuestLogin.css
+* Styles for the guest login page 
+*/
+
+.guest-login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f5f7fa;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.guest-login-container h1 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.guest-login-container .subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.guest-login-button {
+  padding: 1rem 2rem;
+  background-color: #4a6fa5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 2rem;
+}
+
+.guest-login-button:hover {
+  background-color: #3a5a84;
+}
+
+.guest-login-button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+}
+
+.guest-login-container .login-options {
+  margin-top: 1rem;
+}
+
+.guest-login-container .or-divider {
+  margin: 1rem 0;
+  color: #666;
+  position: relative;
+}
+
+.guest-login-container .or-divider::before,
+.guest-login-container .or-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 100px;
+  height: 1px;
+  background-color: #ddd;
+}
+
+.guest-login-container .or-divider::before {
+  right: 100%;
+  margin-right: 15px;
+}
+
+.guest-login-container .or-divider::after {
+  left: 100%;
+  margin-left: 15px;
+}
+
+.guest-login-container .auth-links {
+  margin-top: 1rem;
+}
+
+.auth-link {
+  color: #4a6fa5;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.auth-link:hover {
+  color: #3a5a84;
+  text-decoration: underline;
+}
+
+.separator {
+  margin: 0 1rem;
+  color: #ddd;
+}
+
+/* Error message styles */
+.guest-login-container .error-message {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Debug button styles */
+.debug-button {
+  padding: 0.5rem 1rem;
+  background-color: #e0e0e0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.debug-button:hover {
+  background-color: #d0d0d0;
+}
+
+.debug-text {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.5rem;
+} 

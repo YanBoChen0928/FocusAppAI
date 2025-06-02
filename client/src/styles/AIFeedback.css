@@ -1,0 +1,167 @@
+/* AIFeedback Component Styles */
+.ai-feedback-paper {
+  padding: 24px;
+  margin-bottom: 24px;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.ai-feedback-header {
+  margin-bottom: 20px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.ai-feedback-title {
+  margin-bottom: 16px;
+  font-size: 1.5rem;
+}
+
+.ai-feedback-loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ai-feedback-loading-text {
+  margin-left: 16px;
+}
+
+.ai-feedback-placeholder {
+  text-align: center;
+  padding: 24px;
+}
+
+.ai-feedback-content {
+  white-space: pre-line;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.ai-feedback-timestamp {
+  margin-top: 16px;
+  text-align: right;
+  color: #999;
+  font-size: 0.7rem;
+}
+
+/* New standardized AI feedback styles */
+.ai-feedback-result {
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #fff;
+  min-height: 200px;
+}
+
+/* Remove unnecessary report header styles */
+.ai-feedback-structured-content {
+  max-height: none;
+  overflow-y: visible;
+  min-height: 300px;
+  height: auto;
+  padding-top: 5px;
+}
+
+.ai-feedback-section-content {
+  padding: 8px;
+  background-color: #fafafa;
+  line-height: 1.6;
+  min-height: 100px;
+}
+
+.ai-feedback-error {
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 4px;
+  background-color: #fff4f4;
+  border-left: 4px solid #f44336;
+}
+
+/* Time range selector styles */
+.ai-feedback-controls {
+  /* Styles removed as elements are positioned directly */
+}
+
+.ai-feedback-date-range {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.ai-feedback-generate-btn {
+  /* Styles set in JSX */
+}
+
+.ai-feedback-date-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 300px;
+  padding: 8px 0;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .ai-feedback-date-range {
+    max-width: 300px;
+    margin: 0 auto 16px auto;
+  }
+  
+  .ai-feedback-generate-btn {
+    max-width: 200px;
+    margin: 0 auto;
+  }
+} 
+
+/* New export report styles */
+.export-report-btn {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto 24px auto;
+  display: block;
+}
+
+.report-section-title {
+  color: #0066cc;
+  margin: 24px 0 16px 0;
+  font-weight: 600;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.report-table th {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.report-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.report-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.report-table-responsive {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.ai-feedback-structured-content button {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Ensure Popover styles don't interfere */
+.MuiPopover-paper {
+  animation: popoverFadeIn 0.2s ease-out;
+  z-index: 1400;
+} 

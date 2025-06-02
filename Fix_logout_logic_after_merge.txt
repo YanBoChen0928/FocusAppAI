@@ -1,0 +1,12 @@
+Fix logout logic after merge: handle 401 error when session is already cleared
+
+- Pair-programming with https://github.com/bestian830
+- Resolved an issue where calling the logout API would result in a 401 error if the session had already expired or the cookie was cleared.
+- Updated logout logic to:
+  - For guest users:  
+    - Attempt to call logout API but catch and ignore errors if session no longer exists.  
+    - Preserve `tempId` in localStorage for potential reuse.  
+  - For registered users:  
+    - Call logout API and remove `userId` from localStorage upon success.
+- Ensured `withCredentials` is used in all logout API calls to properly include cookies.
+- Added error handling to allow local cleanup to proceed even if API call fails.
