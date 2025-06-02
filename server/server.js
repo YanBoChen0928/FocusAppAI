@@ -1,20 +1,20 @@
 // Description: Main server file for the Express.js backend. first part: as the door to the restaurant
 
-// 确保dotenv在最开始就加载
+// Ensure dotenv is loaded at the beginning
 import dotenv from "dotenv";
-// 立即加载环境变量
+// Load environment variables immediately
 dotenv.config();
 
-// 添加环境变量检查
-console.log("=== 环境变量检查 ===");
+// Add environment variables check
+console.log("=== Environment Variables Check ===");
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("PORT:", process.env.PORT);
 console.log("CLIENT_URL:", process.env.CLIENT_URL);
-console.log("MongoDB URI:", process.env.MONGODB_URI ? "已设置" : "未设置");
-console.log("Cloudinary配置状态:", 
+console.log("MongoDB URI:", process.env.MONGODB_URI ? "Set" : "Not Set");
+console.log("Cloudinary Config Status:", 
   !!(process.env.CLOUDINARY_CLOUD_NAME && 
      process.env.CLOUDINARY_API_KEY && 
-     process.env.CLOUDINARY_API_SECRET) ? "已完成" : "未完成");
+     process.env.CLOUDINARY_API_SECRET) ? "Complete" : "Incomplete");
 console.log("=======================");
 
 import express from "express";
@@ -45,8 +45,8 @@ app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
       "http://localhost:5173", 
-      "http://localhost:5174",  // 添加本地Vite开发服务器可能使用的备用端口
-      "http://localhost:5175",  // 添加更多可能的本地端口
+      "http://localhost:5174",  // Add backup port for local Vite dev server
+      "http://localhost:5175",  // Add more local ports
       "https://focusappdeploy-frontend.onrender.com", 
       "https://focusfinalproject-frontend-original.onrender.com", 
       "https://focusfinalproject-frontend-original-repo.onrender.com",
@@ -182,42 +182,54 @@ mongoose
   .then(async () => {
     console.log("Connected to MongoDB successfully!");
     
-    // Manually clean all possible unique indexes
+    // Handle collection indexes
     try {
       const db = mongoose.connection.db;
       console.log("Start checking and removing all possible unique indexes...");
       
-      // Get all indexes on the current collection
-      const indexes = await db.collection('goals').indexes();
-      console.log("Existing indexes:", JSON.stringify(indexes));
+      // First check if collection exists
+      const collections = await db.listCollections().toArray();
+      const goalsCollectionExists = collections.some(col => col.name === 'goals');
       
-      // Try to delete all indexes that might be related to userId and title
-      const indexesToDrop = [
-        'userId_1_title_1', 
-        'title_1_userId_1',
-        'title_1',
-        'userId_1_title_1_unique'
-      ];
-      
-      for (const indexName of indexesToDrop) {
-        try {
-          await db.collection('goals').dropIndex(indexName);
-          console.log(`Successfully deleted index: ${indexName}`);
-        } catch (err) {
-          console.log(`Attempted to delete index ${indexName}: ${err.message}`);
+      if (goalsCollectionExists) {
+        // Get all indexes on the goals collection
+        const indexes = await db.collection('goals').indexes();
+        console.log("Existing indexes:", JSON.stringify(indexes));
+        
+        // Define indexes to be dropped
+        const indexesToDrop = [
+          'userId_1_title_1', 
+          'title_1_userId_1',
+          'title_1',
+          'userId_1_title_1_unique'
+        ];
+        
+        // Attempt to drop each index
+        for (const indexName of indexesToDrop) {
+          try {
+            await db.collection('goals').dropIndex(indexName);
+            console.log(`Successfully deleted index: ${indexName}`);
+          } catch (err) {
+            console.log(`Attempted to delete index ${indexName}: ${err.message}`);
+          }
         }
+        
+        // Create new non-unique index
+        await db.collection('goals').createIndex(
+          { userId: 1, title: 1 }, 
+          { unique: false, background: true }
+        );
+        console.log("Successfully rebuilt non-unique index");
+      } else {
+        console.log("Goals collection does not exist yet, skipping index cleanup");
       }
-      
-      // Rebuild non-unique index
-      await db.collection('goals').createIndex({ userId: 1, title: 1 }, { unique: false, background: true });
-      console.log("Successfully rebuilt non-unique index");
       
     } catch (indexError) {
       console.log("Error during index processing:", indexError.message);
       // Continue execution, don't block server startup due to index issues
     }
     
-    // 检查端口是否被占用并尝试使用其他端口
+    // Check if port is in use and try alternative ports
     const startServer = (port) => {
       try {
         const server = app.listen(port, () => {
