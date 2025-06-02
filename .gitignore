@@ -1,0 +1,14 @@
+
+# ignore node_modules
+node_modules/
+
+# ignore res/
+res/
+
+# ignore .env
+*.env
+
+# ignore .DS_Store
+*.DS_Store
+
+
