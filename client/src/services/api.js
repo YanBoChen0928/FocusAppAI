@@ -12,12 +12,14 @@ const DEVELOPMENT_API_URL = "http://localhost:5050";
 const isProduction = import.meta.env.PROD === true || import.meta.env.MODE === "production";
 const API_URL = isProduction ? PRODUCTION_API_URL : DEVELOPMENT_API_URL;
 
-// output configuration information
-console.log("=== API configuration information ===");
-console.log("Running mode:", import.meta.env.MODE);
-console.log("Frontend URL:", window.location.hostname);
-console.log("Selected API URL:", API_URL);
-console.log("====================");
+// output configuration information (only in non-production environments)
+if (!isProduction) {
+  console.log("=== API configuration information ===");
+  console.log("Running mode:", import.meta.env.MODE);
+  console.log("Frontend URL:", window.location.hostname);
+  console.log("Selected API URL:", API_URL);
+  console.log("====================");
+}
 
 // create axios instance with dynamic baseURL
 const api = axios.create({
