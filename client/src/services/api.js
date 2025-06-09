@@ -1,17 +1,37 @@
 import axios from "axios";
 
-// set backend API URL - use environment variable for production
-const PRODUCTION_API_URL = import.meta.env.VITE_API_URL || "https://focusfinalproject-main-backend.onrender.com";
+// set backend API URL with branch-specific fallbacks
+const PRODUCTION_API_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname.includes('focusappdeploy') 
+    ? "https://focusappdeploy-backend.onrender.com"
+    : "https://focusfinalproject-main-backend.onrender.com");
+
 const DEVELOPMENT_API_URL = "http://localhost:5050";
 
-// choose API URL based on environment - optimize environment detection logic
-const isProduction =
-  import.meta.env.PROD === true || import.meta.env.MODE === "production";
+// choose API URL based on environment
+const isProduction = import.meta.env.PROD === true || import.meta.env.MODE === "production";
 const API_URL = isProduction ? PRODUCTION_API_URL : DEVELOPMENT_API_URL;
+
+// output configuration information
+console.log("=== API configuration information ===");
+console.log("Running mode:", import.meta.env.MODE);
+console.log("Frontend URL:", window.location.hostname);
+console.log("Selected API URL:", API_URL);
+console.log("====================");
+
+// create axios instance with dynamic baseURL
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // allow cross-domain requests to carry cookies
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 10000, // 10 seconds
+});
 
 // 尝试探测本地API端口是否可用
 const checkLocalApiPort = async (basePort = 5050, maxAttempts = 3) => {
-  if (isProduction) return API_URL; // 生产环境不需要探测
+  if (import.meta.env.PROD === true || import.meta.env.MODE === "production") return API_URL; // 生产环境不需要探测
 
   for (let i = 0; i < maxAttempts; i++) {
     const portToCheck = basePort + i;
@@ -42,24 +62,6 @@ let detectedApiUrl = API_URL;
 checkLocalApiPort().then(url => {
   detectedApiUrl = url;
   console.log("API URL已更新为:", detectedApiUrl);
-});
-
-// output configuration information, help diagnose connection issues
-console.log("=== API configuration information ===");
-console.log("Running mode:", import.meta.env.MODE);
-console.log("Is production environment:", import.meta.env.PROD);
-console.log("Environment variable VITE_API_URL:", import.meta.env.VITE_API_URL);
-console.log("Environment detection result:", isProduction ? "Production environment" : "Development environment");
-console.log("Initial API URL:", API_URL);
-console.log("====================");
-
-// create axios instance with dynamic baseURL
-const api = axios.create({
-  withCredentials: true, // allow cross-domain requests to carry cookies
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 10000, // 10 seconds
 });
 
 // 请求拦截器，动态设置baseURL
