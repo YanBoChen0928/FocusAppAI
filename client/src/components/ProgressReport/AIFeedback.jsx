@@ -154,12 +154,12 @@ export default function AIFeedback({ goalId }) {
         };
         
         setFeedback(reportData);
-        // Ensure we have a valid date for lastUpdate
-        const generatedAt = response.data.data.generatedAt || new Date().toISOString();
+        // Ensure we have a valid date for lastUpdate with timezone
+        const generatedAt = new Date().toISOString();
         console.log('Setting lastUpdate with generatedAt:', generatedAt);
         setLastUpdate(new Date(generatedAt));
         
-        // Save to Zustand store with proper date
+        // Save to Zustand store with timezone info
         setReport(goalId, {
           ...reportData,
           generatedAt
@@ -177,7 +177,7 @@ export default function AIFeedback({ goalId }) {
       });
       
       if (err.code === 'ECONNABORTED' || (err.message && err.message.includes('timeout'))) {
-        setError('AI分析服务响应超时，请再次点击生成按钮重试。由于AI分析需要一定时间，这是正常情况。');
+        setError('AI analysis service response timeout, please click the generate button again to try. This is normal because AI analysis takes some time.');
       } else {
         setError(err.response?.data?.error || 'Failed to generate analysis, please try again later');
       }
@@ -205,7 +205,7 @@ export default function AIFeedback({ goalId }) {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
-        timeZoneName: 'short'
+        timeZoneName: 'shortOffset'
       });
     } catch (error) {
       console.error('Error formatting timestamp:', error, 'Timestamp:', timestamp);

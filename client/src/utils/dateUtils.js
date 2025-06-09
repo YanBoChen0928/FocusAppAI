@@ -91,75 +91,62 @@ export function isToday(dateInput) {
 }
 
 /**
- * Get the date range for last N days
+ * Get date range for last N days
  * @param {number} days - Number of days to look back
- * @returns {{start: Date, end: Date}} - Start and end dates
+ * @returns {Object} Object containing start and end dates
  */
 export function getLastNDaysRange(days) {
-  const end = endOfDay(new Date());
-  const start = startOfDay(subDays(new Date(), days - 1));
-  return { 
-    start: toUTC(start), 
-    end: toUTC(end) 
-  };
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  
+  const start = new Date();
+  start.setDate(start.getDate() - (days - 1));
+  start.setHours(0, 0, 0, 0);
+  
+  return { start, end };
 }
 
 /**
- * Get the date range for a custom period
+ * Get custom date range
  * @param {Date} startDate - Start date
  * @param {Date} endDate - End date
- * @returns {{start: Date, end: Date}} - Start and end dates with proper time set
+ * @returns {Object} Object containing normalized start and end dates
  */
 export function getCustomDateRange(startDate, endDate) {
-  if (!startDate || !endDate) return { start: null, end: null };
-  try {
-    return {
-      start: toUTC(startOfDay(startDate)),
-      end: toUTC(endOfDay(endDate))
-    };
-  } catch (error) {
-    console.error('Error getting custom date range:', error);
-    return { start: null, end: null };
-  }
-}
-
-/**
- * Format date to standard display format (MM/DD/YYYY)
- * @param {Date|string} date - Date to format
- * @returns {string} - Formatted date string
- */
-export function formatDisplayDate(date) {
-  if (!date) return '';
-  try {
-    const dateObj = typeof date === 'string' ? parseISOToLocal(date) : date;
-    return isValid(dateObj) ? format(dateObj, 'MM/dd/yyyy') : '';
-  } catch (error) {
-    console.error('Error formatting display date:', error);
-    return '';
-  }
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
 }
 
 /**
  * Format date to ISO string with timezone
  * @param {Date} date - Date to format
- * @returns {string} - ISO string with timezone
+ * @returns {string} ISO string with timezone
  */
 export function formatISOWithTimezone(date) {
-  if (!date) return '';
-  const utcDate = toUTC(new Date(date));
-  return formatISO(utcDate);
+  if (!date) return null;
+  const localDate = new Date(date);
+  return localDate.toISOString();
 }
 
 /**
- * Parse ISO date string to local date object
- * @param {string} dateString - ISO date string
- * @returns {Date} - Local date object
+ * Parse ISO date string to local date
+ * @param {string} isoString - ISO date string
+ * @returns {Date} Local date object
  */
-export function parseISOToLocal(dateString) {
-  if (!dateString) return null;
+export function parseISOToLocal(isoString) {
+  if (!isoString) return null;
   try {
-    const utcDate = parseISO(dateString);
-    return fromUTC(utcDate);
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', isoString);
+      return null;
+    }
+    return date;
   } catch (error) {
     console.error('Error parsing ISO date:', error);
     return null;
@@ -182,17 +169,40 @@ export function getDateRangeOptions() {
 }
 
 /**
+ * Format date for display
+ * @param {Date} date - Date to format
+ * @returns {string} Formatted date string
+ */
+export function formatDisplayDate(date) {
+  if (!date) return 'N/A';
+  try {
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZoneName: 'short'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
+}
+
+/**
  * Validate date range
  * @param {Date} startDate - Start date
  * @param {Date} endDate - End date
- * @returns {boolean} - True if range is valid
+ * @returns {boolean} Whether the date range is valid
  */
 export function isValidDateRange(startDate, endDate) {
   if (!startDate || !endDate) return false;
   try {
-    const start = toUTC(new Date(startDate));
-    const end = toUTC(new Date(endDate));
-    return isValid(start) && isValid(end) && start <= end;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end;
   } catch (error) {
     console.error('Error validating date range:', error);
     return false;
