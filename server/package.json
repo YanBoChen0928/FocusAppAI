@@ -23,7 +23,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
-    "openai": "^4.93.0",
-    "react-icons": "^5.5.0"
+    "node-cache": "^5.1.2",
+    "openai": "^4.104.0"
   }
 }
