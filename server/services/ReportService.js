@@ -8,6 +8,10 @@ const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
 
 // Initialize AI clients
 const AI_SERVICE = process.env.AI_SERVICE || 'openai'; // 'openai' or 'huggingface'
+const VALID_AI_SERVICES = ['openai', 'huggingface'];
+if (!VALID_AI_SERVICES.includes(AI_SERVICE)) {
+  throw new Error(`Invalid AI_SERVICE value: '${AI_SERVICE}'. Valid options are: ${VALID_AI_SERVICES.join(', ')}`);
+}
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
