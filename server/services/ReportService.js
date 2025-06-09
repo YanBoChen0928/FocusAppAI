@@ -12,10 +12,14 @@ const VALID_AI_SERVICES = ['openai', 'huggingface'];
 if (!VALID_AI_SERVICES.includes(AI_SERVICE)) {
   throw new Error(`Invalid AI_SERVICE value: '${AI_SERVICE}'. Valid options are: ${VALID_AI_SERVICES.join(', ')}`);
 }
+
+// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
-const hf = new HfInference(process.env.HUGGING_FACE_API_KEY);
+
+// Initialize Hugging Face client only if it's selected
+const hf = AI_SERVICE === 'huggingface' ? new HfInference(process.env.HUGGING_FACE_API_KEY) : null;
 
 class ReportService {
   static async generateReport(goalId, userId, timeRange = 'daily') {
@@ -96,26 +100,40 @@ class ReportService {
   }
 
   static async _generateOpenAIAnalysis(prompt) {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      // model: "gpt-3.5-turbo",
-      store: true,
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional goal tracking and analysis assistant. Your role is to provide insightful analysis, pattern recognition, and constructive suggestions based on user's goal progress data."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-      top_p: 0.95,
-    });
+    try {
+      console.log('Starting OpenAI analysis generation with model:', 'gpt-4');
+      console.log('AI_SERVICE:', process.env.AI_SERVICE);
+      console.log('OpenAI API Key configured:', !!process.env.OPENAI_API_KEY);
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        store: true,
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional goal tracking and analysis assistant. Your role is to provide insightful analysis, pattern recognition, and constructive suggestions based on user's goal progress data."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+        top_p: 0.95,
+      });
 
-    return completion.choices[0].message.content;
+      console.log('OpenAI API call successful');
+      return completion.choices[0].message.content;
+    } catch (error) {
+      console.error('OpenAI API call failed:', {
+        error: error.message,
+        type: error.type,
+        code: error.code,
+        stack: error.stack
+      });
+      throw error;
+    }
   }
 
   static async _generateHuggingFaceAnalysis(prompt) {

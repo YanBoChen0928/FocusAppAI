@@ -1,7 +1,6 @@
 import Goal from '../models/Goal.js';
-import axios from 'axios'; // Keep axios
-// import OpenAI from 'openai'; // Remove OpenAI library import
 import mongoose from 'mongoose';
+import ReportService from '../services/ReportService.js';
 
 // --- Configuration ---
 const HUGGINGFACE_API_URL = process.env.HUGGINGFACE_API_URL; // Read standard API URL
@@ -107,97 +106,6 @@ Keep your response encouraging and practical. Focus on helping the user move for
 };
 
 /**
- * Calls the external AI service using Axios.
- * @param {string} prompt - The prompt to send to the AI.
- * @returns {Promise<string>} A promise that resolves with the AI-generated feedback content.
- */
-const callAIService = async (prompt) => {
-  if (!HUGGINGFACE_API_TOKEN) {
-    throw new Error("AI service token is not configured.");
-  }
-  if (!HUGGINGFACE_API_URL) {
-    throw new Error("AI service URL is not configured.");
-  }
-
-  try {
-    console.log(`DEBUG: Attempting to call AI service. URL: ${HUGGINGFACE_API_URL}`);
-    console.log(`Calling AI service (axios) at: ${HUGGINGFACE_API_URL}`);
-    
-    // Mistral-specific formatting - use a proper chat format
-    const mistralPrompt = {
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 300, // Increased for Mistral
-        return_full_text: false,
-        temperature: 0.5,  // Reduced temperature for more focused responses
-        top_p: 0.9,       // Add top_p for Mistral
-      }
-    };
-    
-    const response = await axios.post(
-      HUGGINGFACE_API_URL,
-      mistralPrompt,
-      {
-        headers: {
-          'Authorization': `Bearer ${HUGGINGFACE_API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 45000 // 45 seconds timeout
-      }
-    );
-
-    console.log('AI service response status:', response.status);
-    console.log('AI service raw response data:', JSON.stringify(response.data, null, 2));
-
-    // Extract feedback - adjust for Mistral response format
-    let feedbackContent = "Error: Could not extract feedback from AI response.";
-    if (Array.isArray(response.data) && response.data[0] && response.data[0].generated_text) {
-      feedbackContent = response.data[0].generated_text.trim();
-    } else if (response.data && response.data.generated_text) {
-      feedbackContent = response.data.generated_text.trim();
-    } else if (typeof response.data === 'string') {
-      // Mistral might return a simple string
-      feedbackContent = response.data.trim();
-    } else {
-      console.error("Unexpected AI response format. Raw data:", response.data);
-    }
-
-    if (feedbackContent.startsWith("Error:")) {
-      throw new Error("Failed to extract valid feedback from AI response.");
-    }
-
-    // Simple post-processing
-    feedbackContent = feedbackContent.replace(/<pad>/g, '').replace(/<\/s>/g, '').trim();
-
-    console.log('Extracted AI feedback:', feedbackContent);
-    return feedbackContent;
-
-  } catch (error) {
-    console.error(`Error calling AI service (axios): ${error.message}`);
-    if (error.response) {
-      console.error('AI Service Error Response Status:', error.response.status);
-      console.error('AI Service Error Response Data:', JSON.stringify(error.response.data, null, 2));
-    } else if (error.request) {
-      console.error('AI Service No Response Received');
-    } else {
-      console.error('AI Service Request Setup Error:', error.message);
-    }
-
-    if (error.response?.status === 401) {
-      throw new Error("AI service authentication failed. Check API token.");
-    } else if (error.response?.status === 429) {
-      throw new Error("AI service rate limit exceeded. Please try again later.");
-    } else if (error.response?.status === 503) {
-      throw new Error("AI service is unavailable or model is loading. Please try again later.");
-    } else if (error.code === 'ECONNABORTED') {
-      throw new Error("AI service request timed out. Please try again later.");
-    }
-    throw new Error(`Failed to get feedback from AI service. Status: ${error.response?.status || 'N/A'}, Data: ${JSON.stringify(error.response?.data) || error.message}`);
-  }
-};
-
-
-/**
  * @controller generateReport
  * @desc Fetches goal data, builds a prompt, calls AI service, and returns feedback.
  * @param {Object} req - Express request object, includes goalId in params.
@@ -233,19 +141,19 @@ export const generateReport = async (req, res) => {
 
     console.log(`Goal found: "${goal.title}"`);
 
-    // 2. Build Prompt with date range
+    // 2. Build Prompt
     const prompt = buildPrompt(goal, startDate, endDate);
 
-    // 3. Call AI Service
-    const feedbackContent = await callAIService(prompt);
+    // 3. Call AI Service through ReportService
+    const feedbackContent = await ReportService._generateAIAnalysis(prompt);
 
     // 4. Generate a unique report ID 
     const reportId = new mongoose.Types.ObjectId().toString();
     
-    // 5. Format the report content in a structured way
+    // 5. Format the report content
     const formattedContent = formatAIResponse(feedbackContent);
     
-    // 6. Return standardized feedback format to Frontend
+    // 6. Return standardized feedback format
     console.log(`Successfully generated feedback for goal: ${goalId}`);
     res.status(200).json({
       success: true,
