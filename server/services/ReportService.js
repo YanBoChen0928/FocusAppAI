@@ -1,9 +1,17 @@
 import { HfInference } from '@huggingface/inference';
+import OpenAI from 'openai';
 import Progress from '../models/Progress.js';
 import Goal from '../models/Goal.js';
 import Report from '../models/Report.js';
 import NodeCache from 'node-cache';
 const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
+
+// Initialize AI clients
+const AI_SERVICE = process.env.AI_SERVICE || 'openai'; // 'openai' or 'huggingface'
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+const hf = new HfInference(process.env.HUGGING_FACE_API_KEY);
 
 class ReportService {
   static async generateReport(goalId, userId, timeRange = 'daily') {
@@ -72,24 +80,53 @@ class ReportService {
 
   static async _generateAIAnalysis(prompt) {
     try {
-      const hf = new HfInference(process.env.HUGGING_FACE_API_KEY);
-      
-      const result = await hf.textGeneration({
-        model: 'gpt2', // or other suitable models
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 500,
-          temperature: 0.7,
-          top_p: 0.95,
-          do_sample: true
-        }
-      });
-
-      return result.generated_text;
+      if (AI_SERVICE === 'openai') {
+        return await this._generateOpenAIAnalysis(prompt);
+      } else {
+        return await this._generateHuggingFaceAnalysis(prompt);
+      }
     } catch (error) {
-      console.error('AI analysis generation failed:', error);
+      console.error(`${AI_SERVICE} analysis generation failed:`, error);
       throw new Error('AI analysis generation failed, please try again later');
     }
+  }
+
+  static async _generateOpenAIAnalysis(prompt) {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      // model: "gpt-3.5-turbo",
+      store: true,
+      messages: [
+        {
+          role: "system",
+          content: "You are a professional goal tracking and analysis assistant. Your role is to provide insightful analysis, pattern recognition, and constructive suggestions based on user's goal progress data."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+      top_p: 0.95,
+    });
+
+    return completion.choices[0].message.content;
+  }
+
+  static async _generateHuggingFaceAnalysis(prompt) {
+    const result = await hf.textGeneration({
+      model: 'gpt2', // or other suitable models
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: 500,
+        temperature: 0.7,
+        top_p: 0.95,
+        do_sample: true
+      }
+    });
+
+    return result.generated_text;
   }
 
   static _preparePrompt(goal, progress, analysis) {
