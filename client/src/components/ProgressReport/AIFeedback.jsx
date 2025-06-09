@@ -198,7 +198,7 @@ export default function AIFeedback({ goalId }) {
         console.warn('parseISOToLocal returned null for timestamp:', timestamp);
         return 'Invalid Date';
       }
-      const options = {
+      return date.toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -206,8 +206,7 @@ export default function AIFeedback({ goalId }) {
         minute: '2-digit',
         hour12: true,
         timeZoneName: 'short'
-      };
-      return date.toLocaleString('en-US', options);
+      });
     } catch (error) {
       console.error('Error formatting timestamp:', error, 'Timestamp:', timestamp);
       return 'Error';

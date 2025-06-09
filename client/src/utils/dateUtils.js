@@ -9,8 +9,35 @@ import {
   format, 
   parseISO,
   isValid,
-  addDays
+  addDays,
+  formatISO
 } from 'date-fns';
+
+/**
+ * Convert local date to UTC
+ * @param {Date} date - Local date to convert
+ * @returns {Date} - UTC date
+ */
+export function toUTC(date) {
+  if (!date) return null;
+  const localDate = new Date(date);
+  return new Date(
+    localDate.getTime() - (localDate.getTimezoneOffset() * 60000)
+  );
+}
+
+/**
+ * Convert UTC date to local
+ * @param {Date} date - UTC date to convert
+ * @returns {Date} - Local date
+ */
+export function fromUTC(date) {
+  if (!date) return null;
+  const utcDate = new Date(date);
+  return new Date(
+    utcDate.getTime() + (utcDate.getTimezoneOffset() * 60000)
+  );
+}
 
 /**
  * Get the ISO week number for a given date
@@ -64,14 +91,17 @@ export function isToday(dateInput) {
 }
 
 /**
- * Get the date range for last N days (inclusive)
+ * Get the date range for last N days
  * @param {number} days - Number of days to look back
  * @returns {{start: Date, end: Date}} - Start and end dates
  */
 export function getLastNDaysRange(days) {
   const end = endOfDay(new Date());
   const start = startOfDay(subDays(new Date(), days - 1));
-  return { start, end };
+  return { 
+    start: toUTC(start), 
+    end: toUTC(end) 
+  };
 }
 
 /**
@@ -81,10 +111,16 @@ export function getLastNDaysRange(days) {
  * @returns {{start: Date, end: Date}} - Start and end dates with proper time set
  */
 export function getCustomDateRange(startDate, endDate) {
-  return {
-    start: startOfDay(startDate),
-    end: endOfDay(endDate)
-  };
+  if (!startDate || !endDate) return { start: null, end: null };
+  try {
+    return {
+      start: toUTC(startOfDay(startDate)),
+      end: toUTC(endOfDay(endDate))
+    };
+  } catch (error) {
+    console.error('Error getting custom date range:', error);
+    return { start: null, end: null };
+  }
 }
 
 /**
@@ -94,8 +130,13 @@ export function getCustomDateRange(startDate, endDate) {
  */
 export function formatDisplayDate(date) {
   if (!date) return '';
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return format(dateObj, 'MM/dd/yyyy');
+  try {
+    const dateObj = typeof date === 'string' ? parseISOToLocal(date) : date;
+    return isValid(dateObj) ? format(dateObj, 'MM/dd/yyyy') : '';
+  } catch (error) {
+    console.error('Error formatting display date:', error);
+    return '';
+  }
 }
 
 /**
@@ -105,7 +146,8 @@ export function formatDisplayDate(date) {
  */
 export function formatISOWithTimezone(date) {
   if (!date) return '';
-  return date.toISOString();
+  const utcDate = toUTC(new Date(date));
+  return formatISO(utcDate);
 }
 
 /**
@@ -115,7 +157,13 @@ export function formatISOWithTimezone(date) {
  */
 export function parseISOToLocal(dateString) {
   if (!dateString) return null;
-  return parseISO(dateString);
+  try {
+    const utcDate = parseISO(dateString);
+    return fromUTC(utcDate);
+  } catch (error) {
+    console.error('Error parsing ISO date:', error);
+    return null;
+  }
 }
 
 /**
@@ -141,6 +189,41 @@ export function getDateRangeOptions() {
  */
 export function isValidDateRange(startDate, endDate) {
   if (!startDate || !endDate) return false;
-  if (!isValid(startDate) || !isValid(endDate)) return false;
-  return startDate <= endDate;
+  try {
+    const start = toUTC(new Date(startDate));
+    const end = toUTC(new Date(endDate));
+    return isValid(start) && isValid(end) && start <= end;
+  } catch (error) {
+    console.error('Error validating date range:', error);
+    return false;
+  }
+}
+
+/**
+ * Format timestamp to Apple style with timezone
+ * @param {string} timestamp - ISO timestamp
+ * @returns {string} - Formatted timestamp string
+ */
+export function formatTimestampAppleStyle(timestamp) {
+  if (!timestamp) return 'N/A';
+  try {
+    const date = parseISOToLocal(timestamp);
+    if (!date) return 'Invalid Date';
+    
+    // Use Intl.DateTimeFormat to get better timezone display
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZoneName: 'shortOffset'
+    });
+    
+    return formatter.format(date);
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return 'Error';
+  }
 } 
