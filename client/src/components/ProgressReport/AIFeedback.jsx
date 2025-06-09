@@ -28,6 +28,14 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import apiService from '../../services/api';
 import { useReportStore } from '../../store/reportStore';
+import {
+  getLastNDaysRange,
+  getCustomDateRange,
+  formatDisplayDate,
+  formatISOWithTimezone,
+  parseISOToLocal,
+  isValidDateRange
+} from '../../utils/dateUtils';
 import '../../styles/AIFeedback.css';
 
 export default function AIFeedback({ goalId }) {
@@ -39,8 +47,9 @@ export default function AIFeedback({ goalId }) {
   // Add time range selection state
   const [timeRange, setTimeRange] = useState('last7days');
   const [customDateOpen, setCustomDateOpen] = useState(false);
-  const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
-  const [endDate, setEndDate] = useState(new Date());
+  const { start: initialStart, end: initialEnd } = getLastNDaysRange(7);
+  const [startDate, setStartDate] = useState(initialStart);
+  const [endDate, setEndDate] = useState(initialEnd);
 
   // Popover state
   const [popoverAnchorEl, setPopoverAnchorEl] = useState(null);
@@ -69,10 +78,10 @@ export default function AIFeedback({ goalId }) {
   useEffect(() => {
     if (goalId && reports[goalId]) {
       setFeedback(reports[goalId]);
-      setLastUpdate(new Date(reports[goalId].generatedAt));
+      setLastUpdate(parseISOToLocal(reports[goalId].generatedAt));
       if (reports[goalId].dateRange) {
-        setStartDate(new Date(reports[goalId].dateRange.startDate));
-        setEndDate(new Date(reports[goalId].dateRange.endDate));
+        setStartDate(parseISOToLocal(reports[goalId].dateRange.startDate));
+        setEndDate(parseISOToLocal(reports[goalId].dateRange.endDate));
       }
     } else {
       // Reset when no report exists for this goal
@@ -87,15 +96,11 @@ export default function AIFeedback({ goalId }) {
     setTimeRange(value);
     
     if (value === 'last7days') {
-      const end = new Date();
-      const start = new Date();
-      start.setDate(end.getDate() - 7);
+      const { start, end } = getLastNDaysRange(7);
       setStartDate(start);
       setEndDate(end);
     } else if (value === 'last30days') {
-      const end = new Date();
-      const start = new Date();
-      start.setDate(end.getDate() - 30);
+      const { start, end } = getLastNDaysRange(30);
       setStartDate(start);
       setEndDate(end);
     } else if (value === 'custom') {
@@ -112,8 +117,10 @@ export default function AIFeedback({ goalId }) {
 
   // Confirm custom date range
   const handleConfirmCustomDate = () => {
-    setCustomDateOpen(false);
-    setTimeRange('custom');
+    if (isValidDateRange(startDate, endDate)) {
+      setCustomDateOpen(false);
+      setTimeRange('custom');
+    }
   };
 
   const generateFeedback = async () => {
@@ -127,11 +134,11 @@ export default function AIFeedback({ goalId }) {
     setError(null);
     try {
       console.log('Starting to request report generation, goalId:', goalId);
-      console.log('Time range:', timeRange, 'Start date:', startDate, 'End date:', endDate);
+      console.log('Time range:', timeRange, 'Start date:', formatDisplayDate(startDate), 'End date:', formatDisplayDate(endDate));
       
-      // Convert dates to ISO string format
-      const startDateStr = startDate.toISOString();
-      const endDateStr = endDate.toISOString();
+      // Convert dates to ISO string format with timezone
+      const startDateStr = formatISOWithTimezone(startDate);
+      const endDateStr = formatISOWithTimezone(endDate);
       
       const response = await apiService.reports.generate(goalId, startDateStr, endDateStr);
       console.log('Received report response:', response);
@@ -140,15 +147,23 @@ export default function AIFeedback({ goalId }) {
         console.log('Report data:', response.data.data);
         const reportData = {
           ...response.data.data,
-          startDate: startDateStr,
-          endDate: endDateStr
+          dateRange: {
+            startDate: startDateStr,
+            endDate: endDateStr
+          }
         };
         
         setFeedback(reportData);
-        setLastUpdate(new Date());
+        // Ensure we have a valid date for lastUpdate
+        const generatedAt = response.data.data.generatedAt || new Date().toISOString();
+        console.log('Setting lastUpdate with generatedAt:', generatedAt);
+        setLastUpdate(new Date(generatedAt));
         
-        // Save to Zustand store
-        setReport(goalId, reportData);
+        // Save to Zustand store with proper date
+        setReport(goalId, {
+          ...reportData,
+          generatedAt
+        });
       } else {
         console.log('Failed to generate report, response:', response);
         setError('Failed to generate analysis, please try again later');
@@ -161,7 +176,6 @@ export default function AIFeedback({ goalId }) {
         stack: err.stack
       });
       
-      // 针对超时错误给出更友好的提示
       if (err.code === 'ECONNABORTED' || (err.message && err.message.includes('timeout'))) {
         setError('AI分析服务响应超时，请再次点击生成按钮重试。由于AI分析需要一定时间，这是正常情况。');
       } else {
@@ -174,25 +188,35 @@ export default function AIFeedback({ goalId }) {
 
   // Format timestamp to Apple style
   const formatTimestampAppleStyle = (timestamp) => {
-    if (!timestamp) return '';
-    
-    const date = new Date(timestamp);
-    
-    const options = {
-      month: 'short', // e.g., Apr
-      day: 'numeric', // e.g., 13
-      year: 'numeric', // e.g., 2025
-      hour: 'numeric', // e.g., 10
-      minute: '2-digit', // e.g., 55
-      hour12: true // e.g., AM/PM
-    };
-    
-    return date.toLocaleString('en-US', options);
+    if (!timestamp) {
+      console.warn('No timestamp provided to formatTimestampAppleStyle');
+      return 'N/A';
+    }
+    try {
+      const date = parseISOToLocal(timestamp);
+      if (!date) {
+        console.warn('parseISOToLocal returned null for timestamp:', timestamp);
+        return 'Invalid Date';
+      }
+      const options = {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+      };
+      return date.toLocaleString('en-US', options);
+    } catch (error) {
+      console.error('Error formatting timestamp:', error, 'Timestamp:', timestamp);
+      return 'Error';
+    }
   };
 
   return (
     <Paper 
-      elevation={0} /* Remove elevation for flatter Apple look */
+      elevation={2} /* Changed from 8 to 2 */
       className="ai-feedback-paper"
       sx={{ 
         borderRadius: '12px', /* Slightly smaller radius */

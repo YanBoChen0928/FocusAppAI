@@ -1,6 +1,16 @@
 /**
- * Date utility functions for handling week calculations
+ * Date utility functions for handling timezone and date calculations
  */
+
+import { 
+  startOfDay, 
+  endOfDay, 
+  subDays, 
+  format, 
+  parseISO,
+  isValid,
+  addDays
+} from 'date-fns';
 
 /**
  * Get the ISO week number for a given date
@@ -34,7 +44,7 @@ export function getStartOfWeek(date) {
  * @returns {string} - Formatted date string (MM/DD)
  */
 export function formatShortDate(date) {
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+  return format(date, 'MM/dd');
 }
 
 /**
@@ -46,11 +56,91 @@ export function isToday(dateInput) {
   if (!dateInput) return false;
   
   // Parse date string if needed
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  if (isNaN(date.getTime())) return false;
+  const date = typeof dateInput === 'string' ? parseISO(dateInput) : dateInput;
+  if (!isValid(date)) return false;
   
   const today = new Date();
-  return date.getDate() === today.getDate() && 
-         date.getMonth() === today.getMonth() && 
-         date.getFullYear() === today.getFullYear();
+  return format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+}
+
+/**
+ * Get the date range for last N days (inclusive)
+ * @param {number} days - Number of days to look back
+ * @returns {{start: Date, end: Date}} - Start and end dates
+ */
+export function getLastNDaysRange(days) {
+  const end = endOfDay(new Date());
+  const start = startOfDay(subDays(new Date(), days - 1));
+  return { start, end };
+}
+
+/**
+ * Get the date range for a custom period
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @returns {{start: Date, end: Date}} - Start and end dates with proper time set
+ */
+export function getCustomDateRange(startDate, endDate) {
+  return {
+    start: startOfDay(startDate),
+    end: endOfDay(endDate)
+  };
+}
+
+/**
+ * Format date to standard display format (MM/DD/YYYY)
+ * @param {Date|string} date - Date to format
+ * @returns {string} - Formatted date string
+ */
+export function formatDisplayDate(date) {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  return format(dateObj, 'MM/dd/yyyy');
+}
+
+/**
+ * Format date to ISO string with timezone
+ * @param {Date} date - Date to format
+ * @returns {string} - ISO string with timezone
+ */
+export function formatISOWithTimezone(date) {
+  if (!date) return '';
+  return date.toISOString();
+}
+
+/**
+ * Parse ISO date string to local date object
+ * @param {string} dateString - ISO date string
+ * @returns {Date} - Local date object
+ */
+export function parseISOToLocal(dateString) {
+  if (!dateString) return null;
+  return parseISO(dateString);
+}
+
+/**
+ * Get date range options for reports
+ * @returns {Object} - Object containing standard date range options
+ */
+export function getDateRangeOptions() {
+  return {
+    last7Days: getLastNDaysRange(7),
+    last30Days: getLastNDaysRange(30),
+    custom: {
+      start: null,
+      end: null
+    }
+  };
+}
+
+/**
+ * Validate date range
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @returns {boolean} - True if range is valid
+ */
+export function isValidDateRange(startDate, endDate) {
+  if (!startDate || !endDate) return false;
+  if (!isValid(startDate) || !isValid(endDate)) return false;
+  return startDate <= endDate;
 } 
