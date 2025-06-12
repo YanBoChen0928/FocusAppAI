@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import Progress from '../models/Progress.js';
 import Goal from '../models/Goal.js';
 import Report from '../models/Report.js';
+import RAGService from './RAGService.js';
 import NodeCache from 'node-cache';
 const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
 
@@ -24,6 +25,8 @@ const hf = AI_SERVICE === 'huggingface' ? new HfInference(process.env.HUGGING_FA
 class ReportService {
   static async generateReport(goalId, userId, timeRange = 'daily') {
     try {
+      this.currentGoalId = goalId; // Store for RAG context
+      
       // 1. get goal information
       const goal = await Goal.findById(goalId);
       if (!goal) {
@@ -69,10 +72,21 @@ class ReportService {
       });
 
       await report.save();
+      
+      try {
+        // Add embedding for RAG (non-critical)
+        await RAGService.saveReportEmbedding(report);
+      } catch (ragError) {
+        console.warn('Failed to save report embedding:', ragError);
+        // Continue without embedding
+      }
+      
       return report;
     } catch (error) {
       console.error('generate report failed:', error);
       throw error;
+    } finally {
+      this.currentGoalId = null; // Clean up
     }
   }
 
@@ -105,6 +119,16 @@ class ReportService {
       console.log('AI_SERVICE:', process.env.AI_SERVICE);
       console.log('OpenAI API Key configured:', !!process.env.OPENAI_API_KEY);
       
+      let enhancedPrompt = prompt;
+      try {
+        // Enhance prompt with RAG (non-critical)
+        enhancedPrompt = await RAGService.enhancePromptWithContext(prompt, this.currentGoalId);
+        console.log('Successfully enhanced prompt with RAG');
+      } catch (ragError) {
+        console.warn('RAG enhancement failed, using original prompt:', ragError);
+        // Continue with original prompt
+      }
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4",
         store: true,
@@ -115,7 +139,7 @@ class ReportService {
           },
           {
             role: "user",
-            content: prompt
+            content: enhancedPrompt
           }
         ],
         temperature: 0.7,

@@ -83,9 +83,33 @@ const ReportSchema = new mongoose.Schema(
       start: Date,
       end: Date,
     },
+    embedding: {
+      type: [Number],
+      sparse: true,
+      index: true,
+      description: "Vector embedding for RAG functionality",
+      validate: {
+        validator: function(v) {
+          return !v || v.length === 1536; // text-embedding-ada-002 dimensions
+        },
+        message: props => `${props.value} must have exactly 1536 dimensions!`
+      }
+    }
   },
   {
     collection: "reports",
+  }
+);
+
+// Add vector search index
+ReportSchema.index(
+  { embedding: "vector" },
+  {
+    name: "reportEmbeddings",
+    vectorSearchOptions: {
+      numDimensions: 1536,
+      similarity: "cosine"
+    }
   }
 );
 
