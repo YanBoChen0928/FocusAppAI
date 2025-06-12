@@ -48,8 +48,11 @@ Progress Log (${startDateStr} to ${endDateStr}):\n`;
   const dailyCards = goal.dailyCards
     .filter(card => {
       const cardDate = new Date(card.date);
+      cardDate.setHours(0, 0, 0, 0);  // 设置为当天开始时间
+      const cardEndDate = new Date(card.date);
+      cardEndDate.setHours(23, 59, 59, 999);  // 设置为当天结束时间
       return (!startDate || cardDate >= startDate) && 
-             (!endDate || cardDate <= endDate);
+             (!endDate || cardEndDate <= endDate);
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -157,7 +160,9 @@ export const generateReport = async (req, res) => {
       switch (timeRange) {
         case 'last7days':
           endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 999);
           startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
           startDate.setDate(startDate.getDate() - 7);
           break;
         case 'today':
@@ -166,19 +171,23 @@ export const generateReport = async (req, res) => {
           break;
         default:
           endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 999);
           startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
           startDate.setDate(startDate.getDate() - 7);
       }
     } else if (timeRange?.startDate && timeRange?.endDate) {
-      // Handle custom date range
+      // Handle custom date range with proper timezone handling
       startDate = new Date(timeRange.startDate);
       startDate.setHours(0, 0, 0, 0);
       endDate = new Date(timeRange.endDate);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      // Default to last 7 days
+      // Default to last 7 days with proper timezone handling
       endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
       startDate = new Date();
+      startDate.setHours(0, 0, 0, 0);
       startDate.setDate(startDate.getDate() - 7);
     }
     

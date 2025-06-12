@@ -28,46 +28,76 @@ class ReportService {
     try {
       this.currentGoalId = goalId;
       
+      // Get user's timezone
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log('User timezone:', userTimeZone);
+      
       // Calculate time range
       let period;
+      const now = new Date();
+      
+      console.log('Calculating time range for:', {
+        timeRange,
+        currentTime: now.toISOString(),
+        userTimeZone
+      });
+
       if (typeof timeRange === 'string') {
-        const now = new Date();
         switch (timeRange) {
-          case 'last7days':
+          case 'last7days': {
+            // last 7 days including today
+            const today = startOfDay(now);
+            const sevenDaysAgo = subDays(today, 6);
             period = {
-              startDate: startOfDay(subDays(now, 6)), // last 7 days including today
+              startDate: sevenDaysAgo,
               endDate: endOfDay(now)
             };
             break;
-          case 'today':
+          }
+          case 'today': {
+            // the user's timezone today
             period = {
               startDate: startOfDay(now),
               endDate: endOfDay(now)
             };
             break;
-          default:
+          }
+          default: {
+            // default is last7days
+            const today = startOfDay(now);
+            const sevenDaysAgo = subDays(today, 6);
             period = {
-              startDate: startOfDay(subDays(now, 6)),
+              startDate: sevenDaysAgo,
               endDate: endOfDay(now)
             };
+          }
         }
       } else if (timeRange?.startDate && timeRange?.endDate) {
+        // deal with custom time range
+        const customStart = parseISO(timeRange.startDate);
+        const customEnd = parseISO(timeRange.endDate);
+        
         period = {
-          startDate: startOfDay(parseISO(timeRange.startDate)),
-          endDate: endOfDay(parseISO(timeRange.endDate))
+          startDate: startOfDay(customStart),
+          endDate: endOfDay(customEnd)
         };
       } else {
-        // Default to last 7 days
-        const now = new Date();
+        // default is last7days
+        const today = startOfDay(now);
+        const sevenDaysAgo = subDays(today, 6);
         period = {
-          startDate: startOfDay(subDays(now, 6)),
+          startDate: sevenDaysAgo,
           endDate: endOfDay(now)
         };
       }
 
-      console.log('Using date range:', {
+      // output detailed time range for debugging
+      console.log('Calculated time range:', {
         startDate: formatISO(period.startDate),
-        endDate: formatISO(period.endDate)
+        endDate: formatISO(period.endDate),
+        startDateLocal: period.startDate.toLocaleString('en-US', { timeZone: userTimeZone }),
+        endDateLocal: period.endDate.toLocaleString('en-US', { timeZone: userTimeZone }),
+        timeZone: userTimeZone
       });
 
       // 1. get goal information
@@ -85,7 +115,13 @@ class ReportService {
         }
       }).sort({ date: -1 });
 
-      console.log(`Found ${progress.length} progress records for date range`);
+      console.log('MongoDB query results:', {
+        progressRecords: progress.length,
+        dateRange: {
+          start: period.startDate.toISOString(),
+          end: period.endDate.toISOString()
+        }
+      });
 
       // 3. analyze data
       const analysis = {
@@ -221,8 +257,14 @@ class ReportService {
   static _preparePrompt(goal, progress, analysis, period) {
     const startDateStr = formatISO(period.startDate, { representation: 'date' });
     const endDateStr = formatISO(period.endDate, { representation: 'date' });
+    
+    console.log('Preparing prompt with date range:', {
+      startDate: startDateStr,
+      endDate: endDateStr,
+      progressRecords: progress.length
+    });
 
-    return `
+    const prompt = `
 As a professional goal analysis assistant, please generate a detailed analysis report based on the following information:
 
 Goal Information:
@@ -238,7 +280,8 @@ Progress Data:
 
 Detailed Records:
 ${progress.map(p => {
-  let record = `- ${formatISO(p.date, { representation: 'date' })}:`;
+  const recordDate = formatISO(new Date(p.date), { representation: 'date' });
+  let record = `- ${recordDate}:`;
   if (p.records && p.records.length > 0) {
     record += '\n' + p.records.map(r => 
       `  • ${r.activity} (${r.duration} mins)${r.notes ? ': ' + r.notes : ''}`
@@ -255,6 +298,9 @@ Please analyze from the following aspects:
 
 Please reply in English, with a positive and encouraging tone, and specific suggestions that are easy to follow.
     `.trim();
+
+    console.log('Generated prompt with proper date formatting');
+    return prompt;
   }
 
   static _generateSuggestions(analysis, goal) {

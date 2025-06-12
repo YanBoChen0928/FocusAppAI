@@ -124,7 +124,6 @@ export default function AIFeedback({ goalId }) {
   };
 
   const generateFeedback = async () => {
-    // If no goalId, return directly
     if (!goalId) {
       setError('No goal selected, cannot generate analysis');
       return;
@@ -136,9 +135,15 @@ export default function AIFeedback({ goalId }) {
       console.log('Starting to request report generation, goalId:', goalId);
       console.log('Time range:', timeRange, 'Start date:', formatDisplayDate(startDate), 'End date:', formatDisplayDate(endDate));
       
+      // 确保时间是当天的开始和结束
+      const adjustedStartDate = new Date(startDate);
+      adjustedStartDate.setHours(0, 0, 0, 0);
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setHours(23, 59, 59, 999);
+      
       // Convert dates to ISO string format with timezone
-      const startDateStr = formatISOWithTimezone(startDate);
-      const endDateStr = formatISOWithTimezone(endDate);
+      const startDateStr = adjustedStartDate.toISOString();
+      const endDateStr = adjustedEndDate.toISOString();
       
       const response = await apiService.reports.generate(goalId, startDateStr, endDateStr);
       console.log('Received report response:', response);
