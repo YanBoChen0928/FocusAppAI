@@ -1,20 +1,20 @@
 import Goal from '../models/Goal.js';
 import mongoose from 'mongoose';
 import ReportService from '../services/ReportService.js';
+import Progress from '../models/Progress.js';
 
 // --- Configuration ---
-const HUGGINGFACE_API_URL = process.env.HUGGINGFACE_API_URL; // Read standard API URL
-const HUGGINGFACE_API_TOKEN = process.env.HUGGINGFACE_API_TOKEN;
-// const HF_MODEL_NAME = process.env.HF_MODEL_NAME; // No longer strictly needed for axios call if URL includes it
-// const HUGGINGFACE_API_BASE_URL = process.env.HUGGINGFACE_API_BASE_URL; // Remove Base URL usage
+// Comment out Hugging Face related config
+// const HUGGINGFACE_API_URL = process.env.HUGGINGFACE_API_URL;
+// const HUGGINGFACE_API_TOKEN = process.env.HUGGINGFACE_API_TOKEN;
 
+// OpenAI Configuration
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-if (!HUGGINGFACE_API_TOKEN) {
-  console.warn("HUGGINGFACE_API_TOKEN is not set. AI report generation will likely fail.");
+if (!OPENAI_API_KEY) {
+  console.warn("OPENAI_API_KEY is not set. AI report generation will likely fail.");
 }
-if (!HUGGINGFACE_API_URL) {
-  console.warn("HUGGINGFACE_API_URL is not set in .env file. AI report generation will likely fail.");
-}
+
 // --- End Configuration ---
 
 /**
@@ -23,80 +23,110 @@ if (!HUGGINGFACE_API_URL) {
  * @param {Object} goal - The goal object from the database.
  * @param {Date} startDate - The start date for filtered data.
  * @param {Date} endDate - The end date for filtered data.
+ * @param {Array} progressRecords - The progress records for the goal.
  * @returns {string} The constructed prompt string.
  */
-const buildPrompt = (goal, startDate, endDate) => {
+const buildPrompt = (goal, startDate, endDate, progressRecords) => {
   const startDateStr = startDate ? new Date(startDate).toLocaleDateString() : 'not specified';
   const endDateStr = endDate ? new Date(endDate).toLocaleDateString() : 'not specified';
   
-  let prompt = `Analyze the progress for the goal titled "${goal.title}" from ${startDateStr} to ${endDateStr}.\n\n`;
-  prompt += `Goal Description: ${goal.description || 'Not provided'}\n`;
-  prompt += `Motivation: ${goal.motivation || 'Not provided'}\n`;
-  prompt += `Target Date: ${goal.targetDate ? new Date(goal.targetDate).toLocaleDateString() : 'Not set'}\n\n`;
-  prompt += `Daily Tasks Defined:\n${goal.dailyTasks && goal.dailyTasks.length > 0 ? goal.dailyTasks.map(task => `- ${task}`).join('\n') : '- None'}\n\n`;
-  prompt += `Progress Log (${startDateStr} to ${endDateStr}):\n`;
+  let prompt = `You are a professional goal tracking and analysis assistant. Your task is to analyze the following goal progress data and provide insightful feedback.
 
-  // Filter dailyCards within the date range
-  const filteredCards = goal.dailyCards
+Goal Information:
+Title: "${goal.title}"
+Time Period: ${startDateStr} to ${endDateStr}
+Description: ${goal.description || 'Not provided'}
+Motivation: ${goal.motivation || 'Not provided'}
+Target Date: ${goal.targetDate ? new Date(goal.targetDate).toLocaleDateString() : 'Not set'}
+
+Daily Tasks:
+${goal.dailyTasks && goal.dailyTasks.length > 0 ? goal.dailyTasks.map(task => `- ${task}`).join('\n') : '- None defined'}
+
+Progress Log (${startDateStr} to ${endDateStr}):\n`;
+
+  // Combine both dailyCards and progressRecords
+  const dailyCards = goal.dailyCards
     .filter(card => {
       const cardDate = new Date(card.date);
-      return (!startDate || cardDate >= new Date(startDate)) && 
-             (!endDate || cardDate <= new Date(endDate));
+      return (!startDate || cardDate >= startDate) && 
+             (!endDate || cardDate <= endDate);
     })
-    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  if (filteredCards.length > 0) {
-    filteredCards.forEach(card => {
+  if (dailyCards.length > 0 || progressRecords.length > 0) {
+    // Process daily cards
+    dailyCards.forEach(card => {
       const cardDate = new Date(card.date).toLocaleDateString();
       prompt += `--- ${cardDate} ---\n`;
+      
+      // Add task completions
       const completions = card.taskCompletions || {};
       const completedTasks = Object.entries(completions)
-                                   .filter(([_, completed]) => completed)
-                                   .map(([taskId]) => {
-                                        // Extract task text from taskId (adjust if ID format changes)
-                                        const taskText = taskId.startsWith('task-')
-                                            ? taskId.substring(5).replace(/-/g, ' ')
-                                            : goal.dailyTasks?.find(t => `task-${t.replace(/\s+/g, '-').toLowerCase()}` === taskId) || taskId;
-                                        return `  - Completed: ${taskText}`;
-                                    })
-                                    .join('\n');
-      const incompleteTasks = Object.entries(completions)
-                                    .filter(([_, completed]) => !completed)
-                                    .map(([taskId]) => {
-                                        const taskText = taskId.startsWith('task-')
-                                            ? taskId.substring(5).replace(/-/g, ' ')
-                                            : goal.dailyTasks?.find(t => `task-${t.replace(/\s+/g, '-').toLowerCase()}` === taskId) || taskId;
-                                        return `  - Incomplete: ${taskText}`;
-                                    })
-                                    .join('\n');
-
+        .filter(([_, completed]) => completed)
+        .map(([taskId]) => {
+          const taskText = taskId.startsWith('task-')
+            ? taskId.substring(5).replace(/-/g, ' ')
+            : goal.dailyTasks?.find(t => `task-${t.replace(/\s+/g, '-').toLowerCase()}` === taskId) || taskId;
+          return `  - Completed: ${taskText}`;
+        })
+        .join('\n');
+      
       if (completedTasks) prompt += `${completedTasks}\n`;
-      if (incompleteTasks) prompt += `${incompleteTasks}\n`;
 
+      // Add card records
       if (card.records && card.records.length > 0) {
         prompt += `  Notes:\n`;
         card.records.forEach(record => {
           prompt += `    - ${record.content} (at ${new Date(record.createdAt).toLocaleTimeString()})\n`;
         });
-      } else {
-        prompt += `  No notes recorded.\n`;
+      }
+    });
+
+    // Process progress records
+    progressRecords.forEach(progress => {
+      const progressDate = new Date(progress.date).toLocaleDateString();
+      if (!dailyCards.some(card => new Date(card.date).toLocaleDateString() === progressDate)) {
+        prompt += `--- ${progressDate} ---\n`;
+        
+        // Add progress records
+        if (progress.records && progress.records.length > 0) {
+          progress.records.forEach(record => {
+            prompt += `  - ${record.activity} (${record.duration} minutes)\n`;
+            if (record.notes) prompt += `    Notes: ${record.notes}\n`;
+          });
+        }
+
+        // Add checkpoint updates
+        if (progress.checkpoints && progress.checkpoints.length > 0) {
+          prompt += `  Checkpoints:\n`;
+          progress.checkpoints.forEach(checkpoint => {
+            prompt += `    - ${checkpoint.title}: ${checkpoint.isCompleted ? 'Completed' : 'In Progress'}\n`;
+          });
+        }
       }
     });
   } else {
-    // Simplified message for no progress data
     prompt += `- No progress data for this time period.\n`;
   }
 
-  // Simplified instruction for Mistral model
-  prompt += `\nBased on the goal information${filteredCards.length > 0 ? ' and progress data' : ''}, please provide:
+  prompt += `\nBased on the goal information and progress data above, please provide a comprehensive analysis in the following format:
 
-1. Progress Analysis: ${filteredCards.length === 0 ? 'General insights about this goal.' : 'Brief analysis of progress patterns.'}
+1. Progress Analysis
+- Analyze the overall progress patterns
+- Highlight key achievements
+- Identify consistency in task completion
 
-2. Potential Challenges: ${filteredCards.length === 0 ? 'Possible obstacles for this type of goal.' : 'Key areas needing attention.'}
+2. Potential Challenges
+- Point out areas needing attention
+- Identify potential obstacles
+- Suggest ways to overcome challenges
 
-3. Actionable Suggestions: ${filteredCards.length === 0 ? '2-3 specific actions to make progress on this goal.' : '2-3 specific next steps.'}
+3. Actionable Suggestions
+- Provide 2-3 specific, practical next steps
+- Suggest improvements to current approach
+- Recommend ways to maintain motivation
 
-Keep your response encouraging and practical. Focus on helping the user move forward with their goal.`;
+Please keep your response encouraging and practical. Focus on helping the user move forward with their goal. Format your response with clear sections and bullet points for readability.`;
 
   console.log("--- Generated AI Prompt ---");
   console.log(prompt);
@@ -118,21 +148,53 @@ export const generateReport = async (req, res) => {
   try {
     console.log(`Generating report for goalId: ${goalId} with timeRange:`, timeRange);
     
-    // Set default time range (if not provided)
-    let startDate = new Date();
-    startDate.setDate(startDate.getDate() - 7); // Default to past 7 days
-    let endDate = new Date();
+    // Calculate time range
+    let startDate, endDate;
     
-    // If time range is provided, use the provided values
-    if (timeRange && timeRange.startDate && timeRange.endDate) {
+    if (typeof timeRange === 'string') {
+      // Handle predefined time ranges
+      const now = new Date();
+      switch (timeRange) {
+        case 'last7days':
+          endDate = new Date(now);
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'today':
+          startDate = new Date(now.setHours(0, 0, 0, 0));
+          endDate = new Date(now.setHours(23, 59, 59, 999));
+          break;
+        default:
+          endDate = new Date(now);
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - 7);
+      }
+    } else if (timeRange?.startDate && timeRange?.endDate) {
+      // Handle custom date range
       startDate = new Date(timeRange.startDate);
+      startDate.setHours(0, 0, 0, 0);
       endDate = new Date(timeRange.endDate);
+      endDate.setHours(23, 59, 59, 999);
+    } else {
+      // Default to last 7 days
+      endDate = new Date();
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
     }
     
     console.log(`Using date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
     
-    // 1. Fetch Goal Data
-    const goal = await Goal.findById(goalId).lean();
+    // 1. Fetch Goal Data with Progress
+    const [goal, progressRecords] = await Promise.all([
+      Goal.findById(goalId).lean(),
+      Progress.find({
+        goalId,
+        date: {
+          $gte: startDate,
+          $lte: endDate
+        }
+      }).sort({ date: -1 }).lean()
+    ]);
 
     if (!goal) {
       console.log(`Goal not found for ID: ${goalId}`);
@@ -140,9 +202,10 @@ export const generateReport = async (req, res) => {
     }
 
     console.log(`Goal found: "${goal.title}"`);
+    console.log(`Found ${progressRecords.length} progress records`);
 
-    // 2. Build Prompt
-    const prompt = buildPrompt(goal, startDate, endDate);
+    // 2. Build Prompt with both goal and progress data
+    const prompt = buildPrompt(goal, startDate, endDate, progressRecords);
 
     // 3. Call AI Service through ReportService
     const feedbackContent = await ReportService._generateAIAnalysis(prompt);

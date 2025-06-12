@@ -16,9 +16,6 @@ class RAGService {
       // 2. Retrieve similar reports from MongoDB
       const similarReports = await Report.aggregate([
         {
-          $match: { goalId: goalId }  // Only search within the same goal
-        },
-        {
           $vectorSearch: {
             queryVector: queryEmbedding,
             path: "embedding",
@@ -26,6 +23,9 @@ class RAGService {
             limit: 5,
             index: "reportEmbeddings",
           }
+        },
+        {
+          $match: { goalId: goalId }  // Filter after vector search
         }
       ]);
 

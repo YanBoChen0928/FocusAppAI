@@ -5,6 +5,7 @@ import Goal from '../models/Goal.js';
 import Report from '../models/Report.js';
 import RAGService from './RAGService.js';
 import NodeCache from 'node-cache';
+import { formatISO, parseISO, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from 'date-fns';
 const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
 
 // Initialize AI clients
@@ -23,24 +24,68 @@ const openai = new OpenAI({
 const hf = AI_SERVICE === 'huggingface' ? new HfInference(process.env.HUGGING_FACE_API_KEY) : null;
 
 class ReportService {
-  static async generateReport(goalId, userId, timeRange = 'daily') {
+  static async generateReport(goalId, userId, timeRange = 'last7days') {
     try {
-      this.currentGoalId = goalId; // Store for RAG context
+      this.currentGoalId = goalId;
       
+      // Calculate time range
+      let period;
+      if (typeof timeRange === 'string') {
+        const now = new Date();
+        switch (timeRange) {
+          case 'last7days':
+            period = {
+              startDate: startOfDay(subDays(now, 6)), // last 7 days including today
+              endDate: endOfDay(now)
+            };
+            break;
+          case 'today':
+            period = {
+              startDate: startOfDay(now),
+              endDate: endOfDay(now)
+            };
+            break;
+          default:
+            period = {
+              startDate: startOfDay(subDays(now, 6)),
+              endDate: endOfDay(now)
+            };
+        }
+      } else if (timeRange?.startDate && timeRange?.endDate) {
+        period = {
+          startDate: startOfDay(parseISO(timeRange.startDate)),
+          endDate: endOfDay(parseISO(timeRange.endDate))
+        };
+      } else {
+        // Default to last 7 days
+        const now = new Date();
+        period = {
+          startDate: startOfDay(subDays(now, 6)),
+          endDate: endOfDay(now)
+        };
+      }
+
+      console.log('Using date range:', {
+        startDate: formatISO(period.startDate),
+        endDate: formatISO(period.endDate)
+      });
+
       // 1. get goal information
       const goal = await Goal.findById(goalId);
       if (!goal) {
         throw new Error('goal does not exist');
       }
 
-      // 2. get progress records
+      // 2. get progress records with proper date range
       const progress = await Progress.find({
         goalId,
         date: {
-          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          $lt: new Date(new Date().setHours(23, 59, 59, 999))
+          $gte: period.startDate,
+          $lte: period.endDate
         }
       }).sort({ date: -1 });
+
+      console.log(`Found ${progress.length} progress records for date range`);
 
       // 3. analyze data
       const analysis = {
@@ -52,12 +97,12 @@ class ReportService {
       };
 
       // 4. prepare prompt
-      const prompt = this._preparePrompt(goal, progress, analysis);
+      const prompt = this._preparePrompt(goal, progress, analysis, period);
       
       // 5. generate AI analysis
       const aiAnalysis = await this._generateAIAnalysis(prompt);
 
-      // 6. create report
+      // 6. create report with proper period
       const report = new Report({
         goalId,
         userId,
@@ -65,8 +110,8 @@ class ReportService {
         analysis,
         type: timeRange,
         period: {
-          startDate: new Date(new Date().setHours(0, 0, 0, 0)),
-          endDate: new Date(new Date().setHours(23, 59, 59, 999))
+          startDate: period.startDate,
+          endDate: period.endDate
         },
         isGenerated: true
       });
@@ -74,11 +119,9 @@ class ReportService {
       await report.save();
       
       try {
-        // Add embedding for RAG (non-critical)
         await RAGService.saveReportEmbedding(report);
       } catch (ragError) {
         console.warn('Failed to save report embedding:', ragError);
-        // Continue without embedding
       }
       
       return report;
@@ -86,7 +129,7 @@ class ReportService {
       console.error('generate report failed:', error);
       throw error;
     } finally {
-      this.currentGoalId = null; // Clean up
+      this.currentGoalId = null;
     }
   }
 
@@ -175,7 +218,10 @@ class ReportService {
     return result.generated_text;
   }
 
-  static _preparePrompt(goal, progress, analysis) {
+  static _preparePrompt(goal, progress, analysis, period) {
+    const startDateStr = formatISO(period.startDate, { representation: 'date' });
+    const endDateStr = formatISO(period.endDate, { representation: 'date' });
+
     return `
 As a professional goal analysis assistant, please generate a detailed analysis report based on the following information:
 
@@ -184,13 +230,22 @@ Title: ${goal.title}
 Current Task: ${goal.currentSettings?.dailyTask || 'None'}
 Priority: ${goal.priority || 'Not set'}
 
-Today's Progress Data:
+Time Range: ${startDateStr} to ${endDateStr}
+Progress Data:
 - Total Records: ${analysis.totalRecords}
 - Completed Tasks: ${analysis.completedTasks}
 - Completion Rate: ${analysis.completionRate.toFixed(1)}%
 
 Detailed Records:
-${progress.map(p => `- ${new Date(p.date).toLocaleTimeString()}: ${p.content || 'No content'}`).join('\n')}
+${progress.map(p => {
+  let record = `- ${formatISO(p.date, { representation: 'date' })}:`;
+  if (p.records && p.records.length > 0) {
+    record += '\n' + p.records.map(r => 
+      `  • ${r.activity} (${r.duration} mins)${r.notes ? ': ' + r.notes : ''}`
+    ).join('\n');
+  }
+  return record;
+}).join('\n')}
 
 Please analyze from the following aspects:
 1. Progress Assessment: Analyze the current progress, including completion rate and efficiency
