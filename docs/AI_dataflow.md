@@ -1,5 +1,11 @@
 # AI Feedback Data Flow Documentation
 
+## Update (2025/06/21)
+Added new RAG strategy implementation. See `AIFeedBack_RAG.md` for detailed documentation about:
+- Time-based RAG activation (21+ days analysis)
+- Model selection strategy (GPT-3.5 vs GPT-4)
+- Cache optimization strategy
+
 ## Overview
 
 The AI feedback system follows a comprehensive data flow pattern that integrates with MongoDB for both input and output operations, enhanced with RAG (Retrieval Augmented Generation) capabilities.

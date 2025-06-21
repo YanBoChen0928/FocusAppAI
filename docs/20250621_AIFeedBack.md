@@ -1,5 +1,12 @@
 # AI Feedback System Optimization Design
 
+## Update (2025/06/21)
+New RAG strategy has been documented in `AIFeedBack_RAG.md`, including:
+- Conditional RAG activation based on analysis timeframe
+- Dual model strategy (GPT-3.5 for daily, GPT-4 for deep analysis)
+- Enhanced caching strategy
+For detailed implementation, please refer to the new document.
+
 Implementation Files:
 
 - `server/services/RAGService.js`: Core RAG functionality implementation
