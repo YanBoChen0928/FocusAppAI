@@ -169,45 +169,108 @@ export function getDateRangeOptions() {
 }
 
 /**
- * Format date for display
- * @param {Date} date - Date to format
+ * Get date range for analysis based on specified time range
+ * @param {string} timeRange - 'last7days', 'last30days', or 'custom'
+ * @param {Object} customRange - { startDate, endDate } for custom range
+ * @returns {Object} Date range with UTC and display dates
+ */
+export const getDateRangeForAnalysis = (timeRange, customRange = null) => {
+  const now = new Date();  // Uses local timezone
+  
+  let start, end;
+  
+  switch(timeRange) {
+    case 'last7days': {
+      end = endOfDay(now);
+      start = startOfDay(subDays(now, 6)); // 6 because including today
+      break;
+    }
+    case 'last30days': {
+      end = endOfDay(now);
+      start = startOfDay(subDays(now, 29)); // 29 because including today
+      break;
+    }
+    case 'custom': {
+      if (!customRange?.startDate || !customRange?.endDate) {
+        throw new Error('Custom date range requires both start and end dates');
+      }
+      start = startOfDay(new Date(customRange.startDate));
+      end = endOfDay(new Date(customRange.endDate));
+      break;
+    }
+    default: {
+      // Default to last 7 days
+      end = endOfDay(now);
+      start = startOfDay(subDays(now, 6));
+    }
+  }
+
+  // For API requests (UTC)
+  const startUTC = start.toISOString();
+  const endUTC = end.toISOString();
+
+  // For display (local time)
+  const displayStart = start;
+  const displayEnd = end;
+
+  return {
+    startDate: startUTC,
+    endDate: endUTC,
+    displayStart,
+    displayEnd
+  };
+};
+
+/**
+ * Format date for display in UI
+ * @param {Date|string} date - Date to format
  * @returns {string} Formatted date string
  */
-export function formatDisplayDate(date) {
-  if (!date) return 'N/A';
-  try {
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZoneName: 'short'
-    });
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Invalid Date';
-  }
-}
+export const formatDisplayDate = (date) => {
+  if (!date) return '';
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short'
+  });
+};
 
 /**
  * Validate date range
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
+ * @param {Date|string} startDate - Start date
+ * @param {Date|string} endDate - End date
  * @returns {boolean} Whether the date range is valid
  */
-export function isValidDateRange(startDate, endDate) {
+export const isValidDateRange = (startDate, endDate) => {
   if (!startDate || !endDate) return false;
-  try {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end;
-  } catch (error) {
-    console.error('Error validating date range:', error);
-    return false;
-  }
-}
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  return start <= end && 
+         start.toString() !== 'Invalid Date' && 
+         end.toString() !== 'Invalid Date';
+};
+
+/**
+ * Get formatted date range string
+ * @param {Date|string} startDate - Start date
+ * @param {Date|string} endDate - End date
+ * @returns {string} Formatted date range
+ */
+export const getDateRangeString = (startDate, endDate) => {
+  if (!startDate || !endDate) return '';
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  return `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
+};
 
 /**
  * Format timestamp to Apple style with timezone

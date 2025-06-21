@@ -28,18 +28,13 @@ class ReportService {
     try {
       this.currentGoalId = goalId;
       
-      // Get user's timezone
-      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      console.log('User timezone:', userTimeZone);
-      
       // Calculate time range
       let period;
       const now = new Date();
       
       console.log('Calculating time range for:', {
         timeRange,
-        currentTime: now.toISOString(),
-        userTimeZone
+        currentTime: now.toISOString()
       });
 
       if (typeof timeRange === 'string') {
@@ -47,17 +42,18 @@ class ReportService {
           case 'last7days': {
             // last 7 days including today
             const today = startOfDay(now);
-            const sevenDaysAgo = subDays(today, 6);
+            const sevenDaysAgo = subDays(today, 6);  // 6 because including today
             period = {
               startDate: sevenDaysAgo,
               endDate: endOfDay(now)
             };
             break;
           }
-          case 'today': {
-            // the user's timezone today
+          case 'last30days': {
+            const today = startOfDay(now);
+            const thirtyDaysAgo = subDays(today, 29);  // 29 because including today
             period = {
-              startDate: startOfDay(now),
+              startDate: thirtyDaysAgo,
               endDate: endOfDay(now)
             };
             break;
@@ -73,31 +69,20 @@ class ReportService {
           }
         }
       } else if (timeRange?.startDate && timeRange?.endDate) {
-        // deal with custom time range
-        const customStart = parseISO(timeRange.startDate);
-        const customEnd = parseISO(timeRange.endDate);
+        // deal with custom time range (already in UTC from client)
+        const customStart = new Date(timeRange.startDate);
+        const customEnd = new Date(timeRange.endDate);
         
         period = {
           startDate: startOfDay(customStart),
           endDate: endOfDay(customEnd)
         };
-      } else {
-        // default is last7days
-        const today = startOfDay(now);
-        const sevenDaysAgo = subDays(today, 6);
-        period = {
-          startDate: sevenDaysAgo,
-          endDate: endOfDay(now)
-        };
       }
 
-      // output detailed time range for debugging
-      console.log('Calculated time range:', {
-        startDate: formatISO(period.startDate),
-        endDate: formatISO(period.endDate),
-        startDateLocal: period.startDate.toLocaleString('en-US', { timeZone: userTimeZone }),
-        endDateLocal: period.endDate.toLocaleString('en-US', { timeZone: userTimeZone }),
-        timeZone: userTimeZone
+      // output time range for debugging
+      console.log('Using time range:', {
+        startDate: period.startDate.toISOString(),
+        endDate: period.endDate.toISOString()
       });
 
       // 1. get goal information
@@ -106,7 +91,7 @@ class ReportService {
         throw new Error('goal does not exist');
       }
 
-      // 2. get progress records with proper date range
+      // 2. get progress records with UTC time range
       const progress = await Progress.find({
         goalId,
         date: {

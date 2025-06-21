@@ -34,7 +34,9 @@ import {
   formatDisplayDate,
   formatISOWithTimezone,
   parseISOToLocal,
-  isValidDateRange
+  isValidDateRange,
+  getDateRangeForAnalysis,
+  getDateRangeString
 } from '../../utils/dateUtils';
 import '../../styles/AIFeedback.css';
 
@@ -216,6 +218,16 @@ export default function AIFeedback({ goalId }) {
       console.error('Error formatting timestamp:', error, 'Timestamp:', timestamp);
       return 'Error';
     }
+  };
+
+  // Date range display
+  const renderDateRange = () => {
+    if (timeRange === 'custom' && customDateRange) {
+      return getDateRangeString(customDateRange.startDate, customDateRange.endDate);
+    }
+
+    const dateRange = getDateRangeForAnalysis(timeRange);
+    return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
   };
 
   return (
@@ -515,6 +527,11 @@ export default function AIFeedback({ goalId }) {
             </Box>
           </Box>
         )}
+
+        {/* Date range display */}
+        <Typography variant="body2" color="textSecondary">
+          Time Range: {renderDateRange()}
+        </Typography>
       </Box>
     </Paper>
   );
