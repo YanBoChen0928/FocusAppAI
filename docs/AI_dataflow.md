@@ -114,10 +114,9 @@ await vectorStore.upsert({
 model: "gpt-4"
 temperature: 0.7
 max_tokens: 500
-top_p: 0.95
 
 // For embeddings
-model: "text-embedding-ada-002"
+model: "text-embedding-3-small"
 encoding_format: "float"
 ```
 
@@ -382,3 +381,160 @@ Monitor response times:
   - Vector search performance
   - Embedding generation time
   - MongoDB index efficiency
+```
+
+## Future Features
+
+### Interactive User Feedback Flow
+```
+┌──────────────┐    1    ┌──────────────┐    2    ┌──────────────┐
+│              │─────────►              │─────────►│              │
+│   User       │         │  Frontend    │         │   Backend    │
+│  Interface   │         │  (React)     │         │   (Node.js)  │
+│              │◄────────│              │◄────────│              │
+└──────────────┘    4    └──────────────┘    3    └──────────────┘
+                                                         │
+                                                         │
+                                              5          ▼
+                                             ┌──────────────┐
+                                             │              │
+                                             │   OpenAI     │
+                                             │     API      │
+                                             │              │
+                                             └──────────────┘
+```
+
+### Implementation Details
+
+1. **User Input Handler**
+```javascript
+// client/src/components/ProgressReport/AIFeedback.jsx
+const handleUserQuery = async (feedbackId, userQuery) => {
+  const context = {
+    originalFeedback: feedback.content,
+    userQuery: userQuery,
+    feedbackId: feedbackId
+  };
+  
+  const response = await api.post('/api/feedback/query', context);
+  return response.data;
+};
+```
+
+2. **Backend Processing**
+```javascript
+// server/services/AIService.js
+class AIService {
+  static async processUserQuery(context) {
+    const prompt = `
+Based on the original feedback:
+${context.originalFeedback}
+
+User's question:
+${context.userQuery}
+
+Please provide a detailed response that:
+1. Directly addresses the user's question
+2. References relevant parts of the original feedback
+3. Provides specific, actionable insights
+4. Maintains consistency with previous recommendations
+`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are a goal-oriented AI assistant." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 500
+    });
+
+    return completion.choices[0].message.content;
+  }
+}
+```
+
+### API Updates
+
+1. **New Endpoint**
+```javascript
+// server/routes/feedback.js
+router.post('/query', auth, async (req, res) => {
+  try {
+    const response = await AIService.processUserQuery(req.body);
+    res.json({ success: true, data: response });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+```
+
+2. **Frontend Integration**
+```javascript
+// client/src/components/ProgressReport/AIFeedback.jsx
+const AIFeedbackDetail = ({ feedback }) => {
+  const [userQuery, setUserQuery] = useState('');
+  const [detailedResponse, setDetailedResponse] = useState(null);
+
+  const handleQuerySubmit = async () => {
+    const response = await handleUserQuery(feedback.id, userQuery);
+    setDetailedResponse(response);
+  };
+
+  return (
+    <div>
+      <textarea
+        value={userQuery}
+        onChange={(e) => setUserQuery(e.target.value)}
+        placeholder="Ask for more details about this feedback..."
+      />
+      <button onClick={handleQuerySubmit}>Get Details</button>
+      {detailedResponse && (
+        <div className="detailed-response">
+          {detailedResponse}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+### OpenAI Service Migration
+
+Previous Hugging Face implementation has been replaced with OpenAI:
+
+```javascript
+// server/services/AIService.js
+class AIService {
+  static async generateAnalysis(prompt) {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: "You are a goal-oriented AI assistant." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      });
+
+      return completion.choices[0].message.content;
+    } catch (error) {
+      console.error('AI analysis generation failed:', error);
+      throw new Error('AI analysis generation failed, please try again later');
+    }
+  }
+
+  static async generateEmbedding(text) {
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text,
+      encoding_format: "float"
+    });
+    return response.data[0].embedding;
+  }
+}
+
+export default AIService;
+```

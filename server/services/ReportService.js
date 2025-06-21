@@ -1,27 +1,14 @@
-import { HfInference } from '@huggingface/inference';
 import OpenAI from 'openai';
 import Progress from '../models/Progress.js';
 import Goal from '../models/Goal.js';
 import Report from '../models/Report.js';
-import RAGService from './RAGService.js';
 import NodeCache from 'node-cache';
-import { formatISO, parseISO, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from 'date-fns';
-const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
 
-// Initialize AI clients
-const AI_SERVICE = process.env.AI_SERVICE || 'openai'; // 'openai' or 'huggingface'
-const VALID_AI_SERVICES = ['openai', 'huggingface'];
-if (!VALID_AI_SERVICES.includes(AI_SERVICE)) {
-  throw new Error(`Invalid AI_SERVICE value: '${AI_SERVICE}'. Valid options are: ${VALID_AI_SERVICES.join(', ')}`);
-}
-
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Initialize Hugging Face client only if it's selected
-const hf = AI_SERVICE === 'huggingface' ? new HfInference(process.env.HUGGING_FACE_API_KEY) : null;
+const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
 
 class ReportService {
   static async generateReport(goalId, userId, timeRange = 'last7days') {
@@ -110,18 +97,10 @@ class ReportService {
       const progress = await Progress.find({
         goalId,
         date: {
-          $gte: period.startDate,
-          $lte: period.endDate
+          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          $lt: new Date(new Date().setHours(23, 59, 59, 999))
         }
       }).sort({ date: -1 });
-
-      console.log('MongoDB query results:', {
-        progressRecords: progress.length,
-        dateRange: {
-          start: period.startDate.toISOString(),
-          end: period.endDate.toISOString()
-        }
-      });
 
       // 3. analyze data
       const analysis = {
@@ -133,12 +112,12 @@ class ReportService {
       };
 
       // 4. prepare prompt
-      const prompt = this._preparePrompt(goal, progress, analysis, period);
+      const prompt = this._preparePrompt(goal, progress, analysis);
       
       // 5. generate AI analysis
       const aiAnalysis = await this._generateAIAnalysis(prompt);
 
-      // 6. create report with proper period
+      // 6. create report
       const report = new Report({
         goalId,
         userId,
@@ -146,26 +125,17 @@ class ReportService {
         analysis,
         type: timeRange,
         period: {
-          startDate: period.startDate,
-          endDate: period.endDate
+          startDate: new Date(new Date().setHours(0, 0, 0, 0)),
+          endDate: new Date(new Date().setHours(23, 59, 59, 999))
         },
         isGenerated: true
       });
 
       await report.save();
-      
-      try {
-        await RAGService.saveReportEmbedding(report);
-      } catch (ragError) {
-        console.warn('Failed to save report embedding:', ragError);
-      }
-      
       return report;
     } catch (error) {
       console.error('generate report failed:', error);
       throw error;
-    } finally {
-      this.currentGoalId = null;
     }
   }
 
@@ -181,90 +151,25 @@ class ReportService {
 
   static async _generateAIAnalysis(prompt) {
     try {
-      if (AI_SERVICE === 'openai') {
-        return await this._generateOpenAIAnalysis(prompt);
-      } else {
-        return await this._generateHuggingFaceAnalysis(prompt);
-      }
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: "You are a goal-oriented AI assistant." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      });
+
+      return completion.choices[0].message.content;
     } catch (error) {
-      console.error(`${AI_SERVICE} analysis generation failed:`, error);
+      console.error('AI analysis generation failed:', error);
       throw new Error('AI analysis generation failed, please try again later');
     }
   }
 
-  static async _generateOpenAIAnalysis(prompt) {
-    try {
-      console.log('Starting OpenAI analysis generation with model:', 'gpt-4');
-      console.log('AI_SERVICE:', process.env.AI_SERVICE);
-      console.log('OpenAI API Key configured:', !!process.env.OPENAI_API_KEY);
-      
-      let enhancedPrompt = prompt;
-      try {
-        // Enhance prompt with RAG (non-critical)
-        enhancedPrompt = await RAGService.enhancePromptWithContext(prompt, this.currentGoalId);
-        console.log('Successfully enhanced prompt with RAG');
-      } catch (ragError) {
-        console.warn('RAG enhancement failed, using original prompt:', ragError);
-        // Continue with original prompt
-      }
-      
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        store: true,
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional goal tracking and analysis assistant. Your role is to provide insightful analysis, pattern recognition, and constructive suggestions based on user's goal progress data."
-          },
-          {
-            role: "user",
-            content: enhancedPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-        top_p: 0.95,
-      });
-
-      console.log('OpenAI API call successful');
-      return completion.choices[0].message.content;
-    } catch (error) {
-      console.error('OpenAI API call failed:', {
-        error: error.message,
-        type: error.type,
-        code: error.code,
-        stack: error.stack
-      });
-      throw error;
-    }
-  }
-
-  static async _generateHuggingFaceAnalysis(prompt) {
-    const result = await hf.textGeneration({
-      model: 'gpt2', // or other suitable models
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 500,
-        temperature: 0.7,
-        top_p: 0.95,
-        do_sample: true
-      }
-    });
-
-    return result.generated_text;
-  }
-
-  static _preparePrompt(goal, progress, analysis, period) {
-    const startDateStr = formatISO(period.startDate, { representation: 'date' });
-    const endDateStr = formatISO(period.endDate, { representation: 'date' });
-    
-    console.log('Preparing prompt with date range:', {
-      startDate: startDateStr,
-      endDate: endDateStr,
-      progressRecords: progress.length
-    });
-
-    const prompt = `
+  static _preparePrompt(goal, progress, analysis) {
+    return `
 As a professional goal analysis assistant, please generate a detailed analysis report based on the following information:
 
 Goal Information:
@@ -272,23 +177,13 @@ Title: ${goal.title}
 Current Task: ${goal.currentSettings?.dailyTask || 'None'}
 Priority: ${goal.priority || 'Not set'}
 
-Time Range: ${startDateStr} to ${endDateStr}
-Progress Data:
+Today's Progress Data:
 - Total Records: ${analysis.totalRecords}
 - Completed Tasks: ${analysis.completedTasks}
 - Completion Rate: ${analysis.completionRate.toFixed(1)}%
 
 Detailed Records:
-${progress.map(p => {
-  const recordDate = formatISO(new Date(p.date), { representation: 'date' });
-  let record = `- ${recordDate}:`;
-  if (p.records && p.records.length > 0) {
-    record += '\n' + p.records.map(r => 
-      `  • ${r.activity} (${r.duration} mins)${r.notes ? ': ' + r.notes : ''}`
-    ).join('\n');
-  }
-  return record;
-}).join('\n')}
+${progress.map(p => `- ${new Date(p.date).toLocaleTimeString()}: ${p.content || 'No content'}`).join('\n')}
 
 Please analyze from the following aspects:
 1. Progress Assessment: Analyze the current progress, including completion rate and efficiency
@@ -298,9 +193,6 @@ Please analyze from the following aspects:
 
 Please reply in English, with a positive and encouraging tone, and specific suggestions that are easy to follow.
     `.trim();
-
-    console.log('Generated prompt with proper date formatting');
-    return prompt;
   }
 
   static _generateSuggestions(analysis, goal) {

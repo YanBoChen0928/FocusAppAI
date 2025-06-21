@@ -1,73 +1,22 @@
 # AI Feedback System Optimization Design
 
-## Implementation Files Overview
+Implementation Files:
 
-This design will be implemented through the following files:
-
-### Core Implementation Files
-1. **ReportService.js**
-   - RAG trigger logic implementation
-   - Data analysis and pattern detection
-   - Time-zone aware processing
-   - Integration with RAGService
-   - Affected files:
-     - `server/services/ReportService.js`
-     - `server/controllers/reportsController.js`
-     - `server/routes/reports.js`
-
-2. **RAGService.js**
-   - Context enhancement
-   - Embedding generation and storage
-   - Semantic search implementation
-   - Affected files:
-     - `server/services/RAGService.js`
-     - `server/config/openai.js` (if needed)
-
-3. **AIFeedback.jsx**
-   - Frontend RAG indicator
-   - Interactive feedback UI
-   - Deep-dive analysis interface
-   - Affected files:
-     - `client/src/components/ProgressReport/AIFeedback.jsx`
-     - `client/src/components/ProgressReport/ProgressReport.jsx`
-     - `client/src/services/api.js`
-
-4. **Report.js (MongoDB Schema)**
-   - TTL index implementation (optional)
-   - Vector search optimization
-   - Affected files:
-     - `server/models/Report.js`
-     - `server/config/db.js`
-
-### Implementation Order and Dependencies
-1. **Phase 1: Core RAG Implementation**
-   - Update ReportService.js
-   - Verify RAG functionality
-   - Test data analysis accuracy
-
-2. **Phase 2: Data Storage**
-   - Implement MongoDB storage
-   - Set up data retrieval
-   - Optimize indexes
-
-3. **Phase 3: Frontend Integration**
-   - Add RAG indicator
-   - Implement deep-dive UI
-   - Test user interactions
-
-4. **Phase 4: Performance Optimization**
-   - Add caching
-   - Optimize queries
-   - Implement monitoring
+- `server/services/RAGService.js`: Core RAG functionality implementation
+- `server/services/ReportService.js`: Report generation and analysis
+- `client/src/components/ProgressReport/AIFeedback.jsx`: Frontend feedback display
+- `server/models/Report.js`: Data model for reports and embeddings
 
 ## I. Token Optimization and Data Analysis
 
 ### 1. Current Data Structure
+
 - Daily goal progress records
-- Support multiple time ranges: 7 days, 30 days, custom time periods
-- Includes detailed daily task completion status
+- Support for multiple time ranges: 7 days, 30 days, custom time periods
+- Detailed daily task completion status
 
 ### 2. Optimized Prompt Structure
+
 ```javascript
 const optimizedPrompt = `
 Analysis Period: ${startDate} to ${endDate}
@@ -84,24 +33,26 @@ Statistical Data:
 
 2. Task Completion Status:
    - Completion Rate: ${completionRate}%
-   - Consecutive Days Completed: ${consecutiveDays}
+   - Consecutive Days: ${consecutiveDays}
    - Incomplete Dates: ${incompleteDates}
 
 Please provide analysis in the following format:
-1. Main Contributing Activities during the period
-2. Daily Task Completion Status
+1. Major contributing activities during the period
+2. Daily task completion status
 3. Strengths and Weaknesses Analysis:
    - Strengths (max 3 points)
-   - Areas for Improvement (max 2 points)
-4. Specific Improvement Suggestions (max 2 points)
-5. Encouraging Feedback (one sentence)
+   - Areas for improvement (max 2 points)
+4. Specific improvement suggestions (max 2 points)
+5. Encouraging feedback (one sentence)
 
-Note: Keep responses concise and specific, each suggestion should not exceed 20 words.
-`
+Note: Keep it concise and specific, each suggestion should not exceed 20 words.
+`;
 ```
 
 ### 3. Token Optimization Strategy
+
 1. **Data Preprocessing**:
+
    - Pre-calculate statistics on the backend
    - Only transmit necessary summary information to AI
    - Use fixed format templates to reduce descriptive text
@@ -109,17 +60,19 @@ Note: Keep responses concise and specific, each suggestion should not exceed 20 
 2. **Response Format Standardization**:
    - Limit output length for each section
    - Use structured output format
-   - Avoid verbose descriptive language
+   - Avoid lengthy descriptive language
 
 ## II. Interactive Feedback Design
 
 ### 1. Basic Feedback Storage
+
 ```javascript
+// Implementation: server/models/Report.js
 const feedbackSchema = {
   goalId: ObjectId,
   timeRange: {
     start: Date,
-    end: Date
+    end: Date,
   },
   analysis: {
     mainActivities: [String],
@@ -127,35 +80,48 @@ const feedbackSchema = {
     strengths: [String],
     weaknesses: [String],
     suggestions: [String],
-    encouragement: String
+    encouragement: String,
   },
-  userInteractions: [{
-    type: String,  // 'question', 'clarification', 'followup'
-    content: String,
-    aiResponse: String,
-    timestamp: Date
-  }]
-}
+  userInteractions: [
+    {
+      type: String, // 'question', 'clarification', 'followup'
+      content: String,
+      aiResponse: String,
+      timestamp: Date,
+    },
+  ],
+};
 ```
 
-### 2. RAG Usage Scenarios
-1. **Scenarios Not Requiring RAG**:
+### 2. RAG Usage Scenarios and Current Implementation
+
+1. **Current Implementation Status**:
+
+   - Using OpenAI for embeddings (`RAGService.js`)
+   - Using Hugging Face's gpt2 for text generation (`ReportService.js`)
+   - Dual API calls for each report generation
+
+2. **Scenarios Not Requiring RAG** (`ReportService.js`):
+
    - Daily progress report generation
    - Basic statistical data analysis
    - Standardized suggestion generation
 
-2. **Recommended RAG Usage Scenarios**:
+3. **Recommended RAG Usage Scenarios** (`RAGService.js`):
    - When users ask in-depth questions
-   - When historical suggestion continuity is needed
-   - When analyzing long-term behavior pattern changes
+   - When referencing historical suggestion continuity
+   - Analyzing long-term behavior pattern changes
 
 ### 3. Interactive Feedback Flow
-1. **Initial Feedback**:
-   - Use optimized standard prompt
-   - No RAG needed, generate directly from current data
 
-2. **Deep Dive Discussion**:
-   - User selects specific feedback points for discussion
+1. **Initial Feedback**:
+
+   - Use optimized standard prompt
+   - Generate directly from current data without RAG
+
+2. **In-depth Dialogue**:
+
+   - Users select specific feedback points for discussion
    - Enable RAG to retrieve relevant historical context
    - Generate more personalized suggestions
 
@@ -166,10 +132,16 @@ const feedbackSchema = {
 
 ## III. Implementation Guidelines
 
+## III. Implementation Guidelines
+
 ### 1. Frontend Implementation
+
+### 1. Frontend Implementation
+
 ```javascript
-// AIFeedback.jsx
+// Implementation: client/src/components/ProgressReport/AIFeedback.jsx
 const AIFeedback = () => {
+  // Basic feedback display
   // Basic feedback display
   const [feedback, setFeedback] = useState(null);
   // Deep dive discussion state
@@ -192,7 +164,7 @@ const AIFeedback = () => {
       setIsUsingRAG(response.usedRAG);
       setFeedback(response.feedback);
     } catch (error) {
-      console.error('Failed to get feedback:', error);
+      console.error("Failed to get feedback:", error);
     }
   };
 
@@ -210,18 +182,22 @@ const AIFeedback = () => {
 ```
 
 ### 2. Backend Implementation
+
 1. **Basic Feedback Generation**:
+
    - Use optimized prompt
    - Preprocess data
    - Standardize output
 
-2. **Deep Dive Discussion Processing**:
-   - Use RAG to enhance context
+2. **In-depth Dialogue Processing**:
+   - Use RAG for context enhancement
    - Save conversation history
    - Update user model
 
 ### 3. Data Storage Strategy
+
 1. **Short-term Data**:
+
    - Basic feedback content
    - Statistical data
    - Current conversation context
@@ -232,6 +208,7 @@ const AIFeedback = () => {
    - Improvement effect tracking
 
 ## IV. Important Notes
+
 1. Keep feedback concise and clear
 2. Ensure suggestions are actionable
 3. Maintain data privacy protection
@@ -243,6 +220,7 @@ const AIFeedback = () => {
 ## V. MongoDB Storage Implementation
 
 ### 1. Report Storage Structure
+
 ```javascript
 // Already implemented in Report.js
 {
@@ -264,12 +242,15 @@ const AIFeedback = () => {
 ```
 
 ### 2. Storage Strategy
+
 1. **Base Report Storage**:
+
    - Store basic report content and metrics
    - Always save embeddings for future RAG use
    - Include timezone-aware timestamps
 
 2. **Analysis Storage**:
+
    - Store detailed analysis in analysis object
    - Keep track of RAG usage in metadata
    - Maintain historical pattern data
@@ -280,14 +261,18 @@ const AIFeedback = () => {
    - Cache frequently accessed patterns
 
 ### 3. Implementation Status
+
 ✅ **Completed**:
+
 - Report Schema with embedding support
 - Basic MongoDB integration
 - Vector search index setup
 - RAG service integration
 
 ⚠️ **Needs Update**:
+
 1. ReportService.js:
+
    - RAG trigger logic
    - Weekly average calculation
    - Pattern detection
@@ -299,7 +284,9 @@ const AIFeedback = () => {
    - API endpoints for deep-dive analysis
 
 ### 4. Data Retention Policy
+
 1. **Short-term Storage**:
+
    - Keep full report content: 30 days
    - Keep embeddings: 90 days
    - Keep basic metrics: 180 days
@@ -310,7 +297,9 @@ const AIFeedback = () => {
    - User preference data
 
 ### 5. Performance Considerations
+
 1. **Index Optimization**:
+
    - Compound index for date-based queries
    - Text index for content search
    - Vector index for embeddings
@@ -321,6 +310,7 @@ const AIFeedback = () => {
    - Cache frequently accessed reports
 
 ## VI. Next Steps
+
 1. Implement TTL indexes for data retention
 2. Add monitoring for storage usage
 3. Optimize query patterns
@@ -329,18 +319,22 @@ const AIFeedback = () => {
 ## VII. Implementation Details
 
 ### 1. Files to Update
+
 1. **ReportService.js**:
+
    - RAG trigger logic
    - Data analysis capabilities
    - Pattern detection
    - Integration with other services
 
 2. **RAGService.js**:
+
    - Context enhancement
    - Semantic search
    - Embedding management
 
 3. **AIFeedback.jsx**:
+
    - Frontend display
    - User interaction handling
    - Real-time feedback
@@ -351,15 +345,316 @@ const AIFeedback = () => {
    - Data structure updates
 
 ### 2. MongoDB Storage Strategy
+
 We will store analysis reports in MongoDB for:
+
 - Future RAG analysis capabilities
 - Long-term user progress tracking
 - Pattern recognition
 - Suggestion quality optimization
 
 ### 3. Implementation Priority
+
 1. ReportService.js updates (core functionality)
 2. RAG functionality verification
 3. Data storage and retrieval implementation
 4. Frontend display integration
 5. Performance optimization
+
+## IV. Key Considerations
+
+1. Keep feedback concise and clear
+2. Ensure suggestions are actionable
+3. Maintain data privacy protection
+4. Optimize storage space usage
+5. Monitor token usage
+
+## V. API Usage Optimization
+
+### 1. Current API Usage Status
+
+- Default use of OpenAI as main output model
+- Simultaneous use of Hugging Face's gpt2 model for local text generation
+- OpenAI API used for:
+  - Generating text embeddings for similarity search
+  - Saving embeddings to database
+
+### 2. API Call Optimization Solutions
+
+1. **Model Selection Optimization**
+
+   - Implement model selection configuration
+   - Support switching between OpenAI and Hugging Face
+   - Choose appropriate model based on requirements
+
+2. **Embedding Service Optimization**
+
+   - Implement embedding service configuration
+   - Provide multiple embedding options:
+     - OpenAI Embeddings
+     - Hugging Face Embeddings
+     - Local embedding models
+
+3. **Caching Strategy**
+   - Implement embedding cache
+   - Cache frequently used query results
+   - Reduce duplicate API calls
+
+### 3. Implementation Plan
+
+1. **Configuration Updates**
+
+   ```javascript
+   // config/ai-service.js
+   const aiConfig = {
+     defaultModel: "huggingface", // or 'openai'
+     embeddingService: "huggingface", // or 'openai', 'local'
+     cacheEnabled: true,
+     cacheTTL: 86400, // 24 hours
+   };
+   ```
+
+2. **Service Layer Updates**
+
+   - Update RAGService.js
+   - Update ReportService.js
+   - Implement caching service
+
+3. **Monitoring Implementation**
+   - API call counting
+   - Response time monitoring
+   - Cost tracking
+
+### 4. Monitoring Metrics
+
+1. **API Usage Metrics**
+
+   - Daily call count
+   - Average response time
+   - Error rate
+
+2. **Cost Metrics**
+
+   - Daily API cost
+   - Cost by service
+   - Cost optimization suggestions
+
+3. **Performance Metrics**
+   - Cache hit rate
+   - Average processing time
+   - System resource usage
+
+### 5. Expected Results
+
+1. **Cost Optimization**
+
+   - Reduce OpenAI API calls by 50%
+   - Optimize embedding service usage
+   - Improve cache utilization
+
+2. **Performance Improvement**
+
+   - Reduce average response time
+   - Improve system stability
+   - Optimize resource usage
+
+3. **Maintainability**
+   - More flexible configuration options
+   - Better monitoring capabilities
+   - Easier problem diagnosis
+
+## VI. Implementation Files Overview
+
+### Core Implementation Files
+
+1. **ReportService.js**
+
+   - RAG trigger logic implementation
+   - Data analysis and pattern detection
+   - Time-zone aware processing
+   - Integration with RAGService
+   - Affected files:
+     - `server/services/ReportService.js`
+     - `server/controllers/reportsController.js`
+     - `server/routes/reports.js`
+
+2. **RAGService.js**
+
+   - Context enhancement
+   - Embedding generation and storage
+   - Semantic search implementation
+   - Affected files:
+     - `server/services/RAGService.js`
+     - `server/config/openai.js` (if needed)
+
+3. **AIFeedback.jsx**
+
+   - Frontend RAG indicator
+   - Interactive feedback UI
+   - Deep-dive analysis interface
+   - Affected files:
+     - `client/src/components/ProgressReport/AIFeedback.jsx`
+     - `client/src/components/ProgressReport/ProgressReport.jsx`
+     - `client/src/services/api.js`
+
+4. **Report.js (MongoDB Schema)**
+   - TTL index implementation (optional)
+   - Vector search optimization
+   - Affected files:
+     - `server/models/Report.js`
+     - `server/config/db.js`
+
+### Implementation Order and Dependencies
+
+1. **Phase 1: Core RAG Implementation**
+
+   - Update ReportService.js
+   - Verify RAG functionality
+   - Test data analysis accuracy
+
+2. **Phase 2: Data Storage**
+
+   - Implement MongoDB storage
+   - Set up data retrieval
+   - Optimize indexes
+
+3. **Phase 3: Frontend Integration**
+
+   - Add RAG indicator
+   - Implement deep-dive UI
+   - Test user interactions
+
+4. **Phase 4: Performance Optimization**
+   - Add caching
+   - Optimize queries
+   - Implement monitoring
+
+## VII. Future Features and API Migration
+
+### 1. Interactive User Feedback
+
+Implementation Files:
+
+- `client/src/components/ProgressReport/AIFeedback.jsx`: Frontend interaction
+- `server/services/AIService.js`: OpenAI integration
+- `server/routes/feedback.js`: API endpoints
+
+1. **User Interface Enhancement**
+
+```javascript
+// client/src/components/ProgressReport/AIFeedback.jsx
+const AIFeedbackDetail = ({ feedback }) => {
+  const [userQuery, setUserQuery] = useState("");
+  const [detailedResponse, setDetailedResponse] = useState(null);
+
+  const handleQuerySubmit = async () => {
+    const response = await handleUserQuery(feedback.id, userQuery);
+    setDetailedResponse(response);
+  };
+};
+```
+
+2. **Backend Processing**
+
+```javascript
+// server/services/AIService.js
+const processUserQuery = async (context) => {
+  const prompt = `
+Based on the original feedback:
+${context.originalFeedback}
+
+User's question:
+${context.userQuery}
+
+Please provide a detailed response that:
+1. Directly addresses the user's question
+2. References relevant parts of the original feedback
+3. Provides specific, actionable insights
+4. Maintains consistency with previous recommendations
+`;
+
+  return await openai.generateResponse(prompt);
+};
+```
+
+### 2. OpenAI Service Configuration
+
+1. **Configuration Updates**
+```javascript
+// server/config/ai-service.js
+const aiConfig = {
+  model: "gpt-4",
+  temperature: 0.7,
+  max_tokens: 500,
+  embedding_model: "text-embedding-3-small",
+  cacheEnabled: true,
+  cacheTTL: 86400 // 24 hours
+};
+```
+
+2. **Service Implementation**
+```javascript
+// server/services/AIService.js
+class AIService {
+  static async generateAnalysis(prompt) {
+    const completion = await openai.chat.completions.create({
+      model: aiConfig.model,
+      messages: [
+        { role: "system", content: "You are a goal-oriented AI assistant." },
+        { role: "user", content: prompt }
+      ],
+      temperature: aiConfig.temperature,
+      max_tokens: aiConfig.max_tokens
+    });
+
+    return completion.choices[0].message.content;
+  }
+
+  static async generateEmbedding(text) {
+    const response = await openai.embeddings.create({
+      model: aiConfig.embedding_model,
+      input: text,
+      encoding_format: "float"
+    });
+    return response.data[0].embedding;
+  }
+}
+```
+
+### 3. Expected Improvements
+
+1. **Response Quality**
+
+   - More consistent output format
+   - Better context understanding
+   - Improved response relevance
+
+2. **Performance Metrics**
+
+   - Average response time: 2-3 seconds
+   - Embedding generation: < 1 second
+   - Context processing: < 500ms
+
+3. **User Experience**
+   - Real-time feedback interaction
+   - Contextual follow-up questions
+   - Seamless conversation flow
+
+### 4. Implementation Timeline
+
+1. **Phase 1: OpenAI Migration**
+
+   - Replace Hugging Face implementation
+   - Update configuration
+   - Test new endpoints
+
+2. **Phase 2: Interactive Features**
+
+   - Implement user query interface
+   - Add response handling
+   - Test conversation flow
+
+3. **Phase 3: Optimization**
+   - Fine-tune prompts
+   - Optimize response times
+   - Implement caching
