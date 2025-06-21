@@ -28,56 +28,76 @@ class ReportService {
     try {
       this.currentGoalId = goalId;
       
+      // Get user's timezone
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log('User timezone:', userTimeZone);
+      
       // Calculate time range
       let period;
+      const now = new Date();
       
-      console.log('Received time range:', timeRange);
+      console.log('Calculating time range for:', {
+        timeRange,
+        currentTime: now.toISOString(),
+        userTimeZone
+      });
 
       if (typeof timeRange === 'string') {
-        const now = new Date();
-        
         switch (timeRange) {
           case 'last7days': {
-            const end = endOfDay(now);
-            const start = startOfDay(subDays(now, 6));
+            // last 7 days including today
+            const today = startOfDay(now);
+            const sevenDaysAgo = subDays(today, 6);
             period = {
-              startDate: start,
-              endDate: end
+              startDate: sevenDaysAgo,
+              endDate: endOfDay(now)
             };
             break;
           }
-          case 'last30days': {
-            const end = endOfDay(now);
-            const start = startOfDay(subDays(now, 29));
+          case 'today': {
+            // the user's timezone today
             period = {
-              startDate: start,
-              endDate: end
+              startDate: startOfDay(now),
+              endDate: endOfDay(now)
             };
             break;
           }
           default: {
-            const end = endOfDay(now);
-            const start = startOfDay(subDays(now, 6));
+            // default is last7days
+            const today = startOfDay(now);
+            const sevenDaysAgo = subDays(today, 6);
             period = {
-              startDate: start,
-              endDate: end
+              startDate: sevenDaysAgo,
+              endDate: endOfDay(now)
             };
           }
         }
       } else if (timeRange?.startDate && timeRange?.endDate) {
-        // Handle custom time range or client-provided range
+        // deal with custom time range
+        const customStart = parseISO(timeRange.startDate);
+        const customEnd = parseISO(timeRange.endDate);
+        
         period = {
-          startDate: new Date(timeRange.startDate),
-          endDate: new Date(timeRange.endDate)
+          startDate: startOfDay(customStart),
+          endDate: endOfDay(customEnd)
+        };
+      } else {
+        // default is last7days
+        const today = startOfDay(now);
+        const sevenDaysAgo = subDays(today, 6);
+        period = {
+          startDate: sevenDaysAgo,
+          endDate: endOfDay(now)
         };
       }
 
-      // Log the actual time range being used
-      console.log('Using time range for query:', {
-        startDate: period.startDate.toISOString(),
-        endDate: period.endDate.toISOString(),
-        startLocal: period.startDate.toLocaleString(),
-        endLocal: period.endDate.toLocaleString()
+      // output detailed time range for debugging
+      console.log('Calculated time range:', {
+        startDate: formatISO(period.startDate),
+        endDate: formatISO(period.endDate),
+        startDateLocal: period.startDate.toLocaleString('en-US', { timeZone: userTimeZone }),
+        endDateLocal: period.endDate.toLocaleString('en-US', { timeZone: userTimeZone }),
+        timeZone: userTimeZone
       });
 
       // 1. get goal information
@@ -86,7 +106,7 @@ class ReportService {
         throw new Error('goal does not exist');
       }
 
-      // 2. get progress records with UTC time range
+      // 2. get progress records with proper date range
       const progress = await Progress.find({
         goalId,
         date: {
@@ -142,7 +162,7 @@ class ReportService {
       
       return report;
     } catch (error) {
-      console.error('Generate report failed:', error);
+      console.error('generate report failed:', error);
       throw error;
     } finally {
       this.currentGoalId = null;
