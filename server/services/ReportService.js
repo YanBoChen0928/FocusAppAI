@@ -30,59 +30,54 @@ class ReportService {
       
       // Calculate time range
       let period;
-      const now = new Date();
       
-      console.log('Calculating time range for:', {
-        timeRange,
-        currentTime: now.toISOString()
-      });
+      console.log('Received time range:', timeRange);
 
       if (typeof timeRange === 'string') {
+        const now = new Date();
+        
         switch (timeRange) {
           case 'last7days': {
-            // last 7 days including today
-            const today = startOfDay(now);
-            const sevenDaysAgo = subDays(today, 6);  // 6 because including today
+            const end = endOfDay(now);
+            const start = startOfDay(subDays(now, 6));
             period = {
-              startDate: sevenDaysAgo,
-              endDate: endOfDay(now)
+              startDate: start,
+              endDate: end
             };
             break;
           }
           case 'last30days': {
-            const today = startOfDay(now);
-            const thirtyDaysAgo = subDays(today, 29);  // 29 because including today
+            const end = endOfDay(now);
+            const start = startOfDay(subDays(now, 29));
             period = {
-              startDate: thirtyDaysAgo,
-              endDate: endOfDay(now)
+              startDate: start,
+              endDate: end
             };
             break;
           }
           default: {
-            // default is last7days
-            const today = startOfDay(now);
-            const sevenDaysAgo = subDays(today, 6);
+            const end = endOfDay(now);
+            const start = startOfDay(subDays(now, 6));
             period = {
-              startDate: sevenDaysAgo,
-              endDate: endOfDay(now)
+              startDate: start,
+              endDate: end
             };
           }
         }
       } else if (timeRange?.startDate && timeRange?.endDate) {
-        // deal with custom time range (already in UTC from client)
-        const customStart = new Date(timeRange.startDate);
-        const customEnd = new Date(timeRange.endDate);
-        
+        // Handle custom time range or client-provided range
         period = {
-          startDate: startOfDay(customStart),
-          endDate: endOfDay(customEnd)
+          startDate: new Date(timeRange.startDate),
+          endDate: new Date(timeRange.endDate)
         };
       }
 
-      // output time range for debugging
-      console.log('Using time range:', {
+      // Log the actual time range being used
+      console.log('Using time range for query:', {
         startDate: period.startDate.toISOString(),
-        endDate: period.endDate.toISOString()
+        endDate: period.endDate.toISOString(),
+        startLocal: period.startDate.toLocaleString(),
+        endLocal: period.endDate.toLocaleString()
       });
 
       // 1. get goal information
@@ -147,7 +142,7 @@ class ReportService {
       
       return report;
     } catch (error) {
-      console.error('generate report failed:', error);
+      console.error('Generate report failed:', error);
       throw error;
     } finally {
       this.currentGoalId = null;

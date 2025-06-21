@@ -134,20 +134,20 @@ export default function AIFeedback({ goalId }) {
     setLoading(true);
     setError(null);
     try {
-      console.log('Starting to request report generation, goalId:', goalId);
-      console.log('Time range:', timeRange, 'Start date:', formatDisplayDate(startDate), 'End date:', formatDisplayDate(endDate));
-      
-      // 确保时间是当天的开始和结束
-      const adjustedStartDate = new Date(startDate);
-      adjustedStartDate.setHours(0, 0, 0, 0);
-      const adjustedEndDate = new Date(endDate);
-      adjustedEndDate.setHours(23, 59, 59, 999);
-      
-      // Convert dates to ISO string format with timezone
-      const startDateStr = adjustedStartDate.toISOString();
-      const endDateStr = adjustedEndDate.toISOString();
-      
-      const response = await apiService.reports.generate(goalId, startDateStr, endDateStr);
+          console.log('Starting to request report generation, goalId:', goalId);
+    
+    // Get date range using the utility function
+    const dateRange = getDateRangeForAnalysis(timeRange);
+    
+    console.log('Date range calculated:', {
+      start: formatDisplayDate(dateRange.displayStart),
+      end: formatDisplayDate(dateRange.displayEnd),
+      startUTC: dateRange.startDate,
+      endUTC: dateRange.endDate
+    });
+
+    // Send request with correct date range format
+    const response = await apiService.reports.generate(goalId, dateRange.startDate, dateRange.endDate);
       console.log('Received report response:', response);
       
       if (response.data && response.data.success) {
@@ -155,8 +155,10 @@ export default function AIFeedback({ goalId }) {
         const reportData = {
           ...response.data.data,
           dateRange: {
-            startDate: startDateStr,
-            endDate: endDateStr
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+            displayStart: dateRange.displayStart,
+            displayEnd: dateRange.displayEnd
           }
         };
         
@@ -166,10 +168,16 @@ export default function AIFeedback({ goalId }) {
         console.log('Setting lastUpdate with generatedAt:', generatedAt);
         setLastUpdate(new Date(generatedAt));
         
-        // Save to Zustand store with timezone info
+        // Save to Zustand store with complete date information
         setReport(goalId, {
           ...reportData,
-          generatedAt
+          generatedAt,
+          dateRange: {
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+            displayStart: dateRange.displayStart,
+            displayEnd: dateRange.displayEnd
+          }
         });
       } else {
         console.log('Failed to generate report, response:', response);

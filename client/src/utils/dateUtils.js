@@ -181,13 +181,15 @@ export const getDateRangeForAnalysis = (timeRange, customRange = null) => {
   
   switch(timeRange) {
     case 'last7days': {
+      // Calculate end as the end of current day
       end = endOfDay(now);
+      // Calculate start as the start of 7 days ago
       start = startOfDay(subDays(now, 6)); // 6 because including today
       break;
     }
     case 'last30days': {
       end = endOfDay(now);
-      start = startOfDay(subDays(now, 29)); // 29 because including today
+      start = startOfDay(subDays(now, 29));
       break;
     }
     case 'custom': {
@@ -212,6 +214,14 @@ export const getDateRangeForAnalysis = (timeRange, customRange = null) => {
   // For display (local time)
   const displayStart = start;
   const displayEnd = end;
+
+  // Log the calculated ranges
+  console.log('Date range calculated:', {
+    start: start.toLocaleString(),
+    end: end.toLocaleString(),
+    startUTC,
+    endUTC
+  });
 
   return {
     startDate: startUTC,
