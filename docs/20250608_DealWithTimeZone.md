@@ -39,7 +39,7 @@ import { subDays, startOfDay, endOfDay, parseISO, formatISO } from 'date-fns';
 import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 
 export const getDateRangeForAnalysis = (timeRange) => {
-  const now = new Date();  // 使用本地时区
+  const now = new Date();  // Use local timezone
   
   let start, end;
   
@@ -55,23 +55,23 @@ export const getDateRangeForAnalysis = (timeRange) => {
       break;
     }
     case 'custom': {
-      // 如果是自定义时间范围，假设已经收到了用户选择的时间
+      // For custom time range, assuming we have received user-selected dates
       start = startOfDay(parseISO(customStartDate));
       end = endOfDay(parseISO(customEndDate));
       break;
     }
     default: {
-      // 默认7天
+      // Default to 7 days
       end = endOfDay(now);
       start = startOfDay(subDays(now, 6));
     }
   }
 
   return {
-    // 只在需要发送到服务器时转换为 UTC
+    // Convert to UTC only when sending to server
     startDate: start.toISOString(),
     endDate: end.toISOString(),
-    // 用于显示的本地时间
+    // Local time for display
     displayStart: start,
     displayEnd: end
   };
@@ -101,17 +101,17 @@ export const convertToUTC = (localTimestamp) => {
 
 ```mermaid
 graph TD
-    A[前端（本地时区）] -->|toISOString() 自动转换为 UTC| B[API 请求]
-    B -->|存储 UTC 时间| C[MongoDB]
-    C -->|从 UTC 转换回本地时间| D[前端显示]
-    D -->|MUI 自动处理| A
+    A[Frontend (Local Timezone)] -->|toISOString() auto converts to UTC| B[API Request]
+    B -->|Store UTC time| C[MongoDB]
+    C -->|Convert UTC back to local time| D[Frontend Display]
+    D -->|MUI auto handling| A
 ```
 
-这个流程确保了：
-1. 前端始终使用用户本地时区显示时间
-2. 数据传输和存储统一使用 UTC
-3. 时区转换在合适的层级自动处理
-4. 利用 MUI 组件的默认时区处理能力
+This flow ensures:
+1. Frontend always displays time in user's local timezone
+2. Data transmission and storage consistently use UTC
+3. Timezone conversions are automatically handled at appropriate layers
+4. Leverages MUI components' built-in timezone handling capabilities
 
 ## Best Practices Implemented
 
@@ -314,3 +314,252 @@ period: {
    - 日期选择器功能
    - 时间范围显示
    - 错误处理
+
+## Implementation Details (2025/06/08 Update)
+
+### Data Flow Between Components
+
+```mermaid
+graph TD
+    A[AIFeedback.jsx] -->|1. Date Range Selection| B[dateUtils.js]
+    B -->|2. getDateRangeForAnalysis| C[UTC + Display Dates]
+    C -->|3. API Call with UTC| D[ReportService.js]
+    D -->|4. MongoDB Query| E[Database]
+    E -->|5. Results| D
+    D -->|6. Format Response| A
+    A -->|7. Local Time Display| F[UI]
+```
+
+### Key Components and Their Roles
+
+1. **AIFeedback.jsx**
+   - Handles date range selection UI
+   - Uses getDateRangeForAnalysis for consistent date handling
+   - Maintains both UTC and display dates
+   ```javascript
+   const dateRange = getDateRangeForAnalysis(timeRange);
+   const response = await apiService.reports.generate(goalId, dateRange.startDate, dateRange.endDate);
+   ```
+
+2. **dateUtils.js**
+   - Central date handling utility
+   - Manages timezone conversions
+   - Provides consistent date range calculations
+   - Returns both UTC and display formats
+
+3. **ReportService.js**
+   - Handles server-side date processing
+   - Works with UTC timestamps
+   - Performs date-based queries in MongoDB
+
+### Time Range Calculation Process
+
+1. **Frontend (Local Time)**
+   - User selects time range (e.g., "Last 7 Days")
+   - `getDateRangeForAnalysis` calculates:
+     - Display dates (local timezone)
+     - API dates (UTC)
+
+2. **API Layer**
+   - Sends UTC timestamps to backend
+   - Maintains timezone information in headers
+
+3. **Backend**
+   - Receives UTC timestamps
+   - Performs database queries using UTC
+   - Returns results with UTC timestamps
+
+4. **Display**
+   - Converts UTC back to local time for display
+   - Uses MUI components' built-in timezone handling
+
+## Reflection and Best Practices
+
+### Key Considerations for Time-based Features
+
+1. **Data Storage**
+   - ✅ Always store dates in UTC in database
+   - ✅ Include timezone information when relevant
+   - ✅ Use ISO 8601 format for consistency
+
+2. **API Communication**
+   - ✅ Always transmit dates in UTC
+   - ✅ Include timezone information in headers
+   - ✅ Validate date formats before processing
+
+3. **Frontend Display**
+   - ✅ Convert to local timezone for display
+   - ✅ Use consistent date formatting
+   - ✅ Consider user's timezone preferences
+
+4. **Date Range Calculations**
+   - ✅ Account for timezone differences
+   - ✅ Handle edge cases (DST, month boundaries)
+   - ✅ Validate date ranges before processing
+
+### Common Pitfalls to Avoid
+
+1. **Time Range Issues**
+   - ❌ Mixing UTC and local times in calculations
+   - ❌ Forgetting to handle timezone offsets
+   - ❌ Inconsistent date range boundaries
+
+2. **Data Consistency**
+   - ❌ Different timezone handling in different components
+   - ❌ Losing timezone information during data transfer
+   - ❌ Inconsistent date formats
+
+3. **User Experience**
+   - ❌ Confusing timezone displays
+   - ❌ Unexpected date changes
+   - ❌ Missing timezone indicators
+
+### Future Improvements
+
+1. **Enhanced Timezone Support**
+   - Add explicit timezone selection
+   - Support for multiple timezone display
+   - Better DST handling
+
+2. **Performance Optimization**
+   - Cache timezone calculations
+   - Batch date conversions
+   - Optimize date-based queries
+
+3. **User Experience**
+   - Add timezone indicators
+   - Improve date range selection UI
+   - Better error handling for invalid dates
+
+## Recent Implementation Updates (2025/06/08)
+
+### Component Integration Flow
+
+```mermaid
+graph TD
+    A[AIFeedback.jsx] -->|1. Date Range Selection| B[dateUtils.js]
+    B -->|2. getDateRangeForAnalysis| C[UTC + Display Dates]
+    C -->|3. API Call with UTC| D[ReportService.js]
+    D -->|4. MongoDB Query| E[Database]
+    E -->|5. Results| D
+    D -->|6. Format Response| A
+    A -->|7. Local Time Display| F[UI]
+```
+
+### Key Components and Their Roles
+
+1. **AIFeedback.jsx**
+   - Handles date range selection UI
+   - Uses getDateRangeForAnalysis for consistent date handling
+   - Maintains both UTC and display dates
+   ```javascript
+   const dateRange = getDateRangeForAnalysis(timeRange);
+   const response = await apiService.reports.generate(goalId, dateRange.startDate, dateRange.endDate);
+   ```
+
+2. **dateUtils.js**
+   - Central date handling utility
+   - Manages timezone conversions
+   - Provides consistent date range calculations
+   - Returns both UTC and display formats
+
+3. **ReportService.js**
+   - Handles server-side date processing
+   - Works with UTC timestamps
+   - Performs date-based queries in MongoDB
+
+### Reflection: Time Handling Best Practices
+
+✅ **Do's:**
+1. Always store dates in UTC format in the database
+2. Use ISO strings for API communications
+3. Convert to local time only at display layer
+4. Leverage built-in MUI timezone handling
+5. Maintain clear separation between UTC and local times
+6. Document timezone handling in each component
+7. Use consistent date utility functions
+
+❌ **Don'ts:**
+1. Don't mix UTC and local times in business logic
+2. Avoid manual timezone calculations
+3. Don't store local timezone dates in database
+4. Never assume server timezone matches client
+5. Don't perform timezone conversion multiple times
+6. Avoid direct Date object manipulation without utility functions
+
+### Future Considerations
+1. **Monitoring**
+   - Add timezone-related logging
+   - Track timezone conversion errors
+   - Monitor date range accuracy
+
+2. **Scalability**
+   - Consider caching frequently used date ranges
+   - Optimize date calculations for large datasets
+   - Plan for international user base
+
+3. **Maintenance**
+   - Regular timezone database updates
+   - Daylight saving time handling
+   - Documentation updates for new developers
+
+## Summary: AI Report Generation and Timezone Handling
+
+The AI report generation process involves three key components working together to ensure consistent timezone handling:
+
+### Component Responsibilities
+
+1. **AIFeedback.jsx (Frontend)**
+   - Handles user interaction for date range selection
+   - Uses `dateUtils.getDateRangeForAnalysis` to get both UTC and display dates
+   - Sends UTC dates to the API while displaying local times in UI
+   - Stores both UTC and display dates in the report store for future reference
+
+2. **dateUtils.js (Utility Layer)**
+   - Provides centralized date handling functions
+   - `getDateRangeForAnalysis`: Returns both UTC (for API) and local dates (for display)
+   - Handles timezone conversions consistently using native Date methods
+   - Ensures date ranges are calculated correctly regardless of user's timezone
+
+3. **ReportService.js (Backend)**
+   - Receives UTC dates from the API
+   - Uses UTC dates for MongoDB queries
+   - Processes date ranges in UTC to ensure consistent data retrieval
+   - Returns results with proper UTC timestamps
+
+### Data Flow Process
+
+1. **User Selection → UTC Conversion**
+   ```
+   User selects date range
+   ↓
+   dateUtils.getDateRangeForAnalysis()
+   ↓
+   Returns: { startDate: UTC, endDate: UTC, displayStart: Local, displayEnd: Local }
+   ```
+
+2. **API Communication**
+   ```
+   AIFeedback sends UTC dates to API
+   ↓
+   ReportService receives UTC dates
+   ↓
+   MongoDB queries using UTC dates
+   ↓
+   Results returned with UTC timestamps
+   ```
+
+3. **Display Handling**
+   ```
+   AIFeedback receives UTC results
+   ↓
+   dateUtils converts to local time for display
+   ↓
+   UI shows dates in user's timezone
+   ```
+
+This design ensures:
+- Consistent date handling across all system layers
+- Proper timezone conversion at appropriate points
+- Clear separation between storage (UTC) and display (local) formats
+- Reliable date range calculations regardless of user location
