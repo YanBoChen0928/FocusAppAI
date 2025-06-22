@@ -40,6 +40,9 @@ import {
 } from '../../utils/dateUtils';
 import '../../styles/AIFeedback.css';
 
+// Last modified: 2025-06-21
+// Changes: Added paragraph spacing using MUI styling system
+
 export default function AIFeedback({ goalId }) {
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -487,9 +490,23 @@ export default function AIFeedback({ goalId }) {
                   fontWeight: 600,
                   color: '#1d1d1f',
                   display: 'inline'
+                },
+                // Add paragraph spacing
+                '& p': {
+                  marginBottom: '1rem'
+                },
+                // Add spacing between sections
+                '& > div': {
+                  marginBottom: '1rem'
+                },
+                // Add spacing for numbered items
+                '& > div + div': {
+                  marginTop: '1rem'
                 }
               }}
-              dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent) }}
+              dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent).split('\n').map(line => 
+                line.trim() ? `<div>${line}</div>` : '<div>&nbsp;</div>'
+              ).join('')}}
             />
           </CardContent>
         </Card>
