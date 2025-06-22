@@ -240,19 +240,44 @@ export default function AIFeedback({ goalId }) {
 
   // Add formatContent helper function after the existing functions
   const formatSectionContent = (content) => {
-    if (!content) return [];
+    if (!content) return content;
     
-    // Split content into sections
-    return content.split('\n').map(line => {
-      if (line.startsWith('- ')) {
-        const [title, ...rest] = line.substring(2).split(':');
-        return {
-          title: title.trim(),
-          content: rest.join(':').trim()
-        };
+    const lines = content.split('\n');
+    let formattedLines = [];
+    let bulletCount = 1;
+    
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      
+      if (currentPopoverTitle === "3. Actionable Suggestions") {
+        if (line.startsWith('- ')) {
+          // For actionable section, convert dash to number and make title bold
+          const [title, ...rest] = line.substring(2).split(':');
+          // Remove any existing markdown formatting
+          const cleanTitle = title.replace(/\*\*/g, '').trim();
+          formattedLines.push(
+            `${bulletCount}. <span class="bold-title">${cleanTitle}</span>:${rest.length ? rest.join(':') : ''}`
+          );
+          bulletCount++;
+        } else {
+          formattedLines.push(line);
+        }
+      } else {
+        if (line.startsWith('- ')) {
+          // For other sections, keep dash and make title bold
+          const [title, ...rest] = line.substring(2).split(':');
+          // Remove any existing markdown formatting
+          const cleanTitle = title.replace(/\*\*/g, '').trim();
+          formattedLines.push(
+            `- <span class="bold-title">${cleanTitle}</span>:${rest.length ? rest.join(':') : ''}`
+          );
+        } else {
+          formattedLines.push(line);
+        }
       }
-      return null;
-    }).filter(Boolean);
+    }
+    
+    return formattedLines.join('\n');
   };
 
   return (
@@ -440,31 +465,22 @@ export default function AIFeedback({ goalId }) {
             }}
           />
           <CardContent sx={{ pt: 1.5, pb: 2, px: 2 }}>
-            {formatSectionContent(currentPopoverContent).map((section, index) => (
-              <Box key={index} sx={{ mb: 2 }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 600,
-                    color: '#1d1d1f',
-                    mb: 1,
-                    fontSize: '0.9rem'
-                  }}
-                >
-                  {section.title}:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: '#333',
-                    fontSize: '0.85rem',
-                    lineHeight: 1.6
-                  }}
-                >
-                  {section.content}
-                </Typography>
-              </Box>
-            ))}
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{
+                whiteSpace: 'pre-line',
+                lineHeight: 1.6,
+                color: '#333',
+                fontSize: '0.85rem',
+                '& .bold-title': {
+                  fontWeight: 600,
+                  color: '#1d1d1f',
+                  display: 'inline'
+                }
+              }}
+              dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent) }}
+            />
           </CardContent>
         </Card>
       </Popover>
