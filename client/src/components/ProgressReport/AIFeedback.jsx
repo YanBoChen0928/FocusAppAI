@@ -242,6 +242,9 @@ export default function AIFeedback({ goalId }) {
   const formatSectionContent = (content) => {
     if (!content) return content;
     
+    // First clean up any markdown ** syntax from the entire content
+    content = content.replace(/\*\*/g, '');
+    
     const lines = content.split('\n');
     let formattedLines = [];
     let bulletCount = 1;
@@ -253,23 +256,30 @@ export default function AIFeedback({ goalId }) {
         if (line.startsWith('- ')) {
           // For actionable section, convert dash to number and make title bold
           const [title, ...rest] = line.substring(2).split(':');
-          // Remove any existing markdown formatting
-          const cleanTitle = title.replace(/\*\*/g, '').trim();
+          
+          // Add empty line before new numbered item (except first item)
+          if (bulletCount > 1) {
+            formattedLines.push('');
+          }
+          
           formattedLines.push(
-            `${bulletCount}. <span class="bold-title">${cleanTitle}</span>:${rest.length ? rest.join(':') : ''}`
+            `${bulletCount}. <span class="bold-title">${title.trim()}</span>:${rest.length ? rest.join(':') : ''}`
           );
           bulletCount++;
         } else {
+          // For regular lines, check if it's a concluding paragraph
+          if (line.trim() && bulletCount > 1) {
+            // Add empty line before concluding paragraph
+            formattedLines.push('');
+          }
           formattedLines.push(line);
         }
       } else {
         if (line.startsWith('- ')) {
           // For other sections, keep dash and make title bold
           const [title, ...rest] = line.substring(2).split(':');
-          // Remove any existing markdown formatting
-          const cleanTitle = title.replace(/\*\*/g, '').trim();
           formattedLines.push(
-            `- <span class="bold-title">${cleanTitle}</span>:${rest.length ? rest.join(':') : ''}`
+            `- <span class="bold-title">${title.trim()}</span>:${rest.length ? rest.join(':') : ''}`
           );
         } else {
           formattedLines.push(line);
