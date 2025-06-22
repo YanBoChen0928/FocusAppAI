@@ -238,6 +238,23 @@ export default function AIFeedback({ goalId }) {
     return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
   };
 
+  // Add formatContent helper function after the existing functions
+  const formatSectionContent = (content) => {
+    if (!content) return [];
+    
+    // Split content into sections
+    return content.split('\n').map(line => {
+      if (line.startsWith('- ')) {
+        const [title, ...rest] = line.substring(2).split(':');
+        return {
+          title: title.trim(),
+          content: rest.join(':').trim()
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  };
+
   return (
     <Paper 
       elevation={2} /* Changed from 8 to 2 */
@@ -423,17 +440,31 @@ export default function AIFeedback({ goalId }) {
             }}
           />
           <CardContent sx={{ pt: 1.5, pb: 2, px: 2 }}>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                whiteSpace: 'pre-line',
-                lineHeight: 1.6,
-                color: '#333',
-                fontSize: '0.85rem' /* Slightly smaller text */
-              }}
-            >
-              {currentPopoverContent}
-            </Typography>
+            {formatSectionContent(currentPopoverContent).map((section, index) => (
+              <Box key={index} sx={{ mb: 2 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 600,
+                    color: '#1d1d1f',
+                    mb: 1,
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  {section.title}:
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: '#333',
+                    fontSize: '0.85rem',
+                    lineHeight: 1.6
+                  }}
+                >
+                  {section.content}
+                </Typography>
+              </Box>
+            ))}
           </CardContent>
         </Card>
       </Popover>
