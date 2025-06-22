@@ -1,67 +1,21 @@
 # AI Feedback RAG Strategy Documentation
 
-Related Files:
-- `server/services/RAGService.js`: Core RAG service implementation
-- `server/services/ReportService.js`: Report generation and processing service
-- `client/src/components/ProgressReport/AIFeedback.jsx`: Frontend AI feedback display component
-- `server/models/Report.js`: Report data model
-- `focus-app/docs/aifeedback_rag_futureFeature.md`: Future feature planning documentation
-- `focus-app/docs/AI_dataflow.md`: AI data flow documentation
-
-## Implementation Status and Plan
-
-### Phase 1: Basic RAG Implementation
-Planned Period: 2025/06/25-2025/07/05
-- [ ] RAG Basic Service Setup
-  - Vector embedding generation
-  - Similarity search
-  - Context enhancement
-- [ ] Vector Storage Configuration
-  - MongoDB vector index setup
-  - Cache mechanism
-- [ ] Basic Model Selection Logic
-  - GPT-3.5 vs GPT-4 selection criteria
-  - Cost optimization strategy
-
-### Phase 2: Deep Analysis Features
-Planned Period: 2025/07/06-2025/07/15
-- [ ] Time Trigger Logic Implementation
-  - 21+ days analysis trigger
-  - Cross-month analysis handling
-- [ ] Edge Case Handling
-  - Milestone detection
-  - User-requested deep analysis
-- [ ] Cache Mechanism Optimization
-  - TTL strategy implementation
-  - Cache update logic
-
-### Phase 3: User Interaction Enhancement
-Planned Period: 2025/07/16-2025/07/25
-- [ ] User Interface Updates
-  - Analysis type indicator
-  - Deep analysis trigger
-- [ ] Feedback Mechanism Implementation
-  - User feedback collection
-  - Dynamic prompt optimization
-- [ ] Error Handling and Monitoring
-  - Error reporting mechanism
-  - Performance monitoring implementation
-
 ## Update: 2025/06/21
 
 ### Model Selection Strategy
 
 1. **Embedding Model**:
+
    - Primary: text-embedding-ada-002 (1536 dimensions)
    - Cache: NodeCache with 1-hour TTL
    - Use Case: All vector embeddings for RAG
 
 2. **Generation Models**:
+
    - Daily Reports: gpt-3.5-turbo
      - Fast response (1-2s)
      - Cost-effective
      - Sufficient for basic analysis
-   
    - Deep Analysis: gpt-4
      - RAG-enhanced context
      - Long-term pattern analysis
@@ -70,6 +24,7 @@ Planned Period: 2025/07/16-2025/07/25
 ### Deep Analysis Criteria
 
 1. **Time-Based Triggers**:
+
 ```javascript
 const shouldUseDeepAnalysis = (startDate, endDate) => {
   const daysDifference = Math.ceil(
@@ -80,6 +35,7 @@ const shouldUseDeepAnalysis = (startDate, endDate) => {
 ```
 
 2. **Edge Cases**:
+
 ```javascript
 const handleEdgeCases = (startDate, endDate) => {
   // Cross-month analysis
@@ -98,11 +54,13 @@ const handleEdgeCases = (startDate, endDate) => {
 ### Implementation Strategy
 
 1. **Cache Configuration**:
+
 ```javascript
 const cacheTTL = isDeepAnalysis ? 86400 : 3600; // 24h for deep analysis, 1h for basic
 ```
 
 2. **Model Selection Logic**:
+
 ```javascript
 class ReportService {
   static async generateReport(goalId, startDate, endDate) {
@@ -143,16 +101,19 @@ class ReportService {
 ### Benefits
 
 1. **Cost Optimization**:
+
    - Selective use of expensive models
    - Reduced API calls
    - Optimized embedding generation
 
 2. **Performance Benefits**:
+
    - Faster response for short-term analysis
    - Rich context for long-term trends
    - Efficient resource utilization
 
 3. **User Experience**:
+
    - Clear distinction between analysis types
    - Consistent response quality
    - Appropriate depth based on timeframe
@@ -160,11 +121,13 @@ class ReportService {
 ### Monitoring Metrics
 
 1. **Usage Tracking**:
+
    - Deep analysis frequency
    - API cost comparison
    - Cache hit rates
 
 2. **Performance Monitoring**:
+
    - Response times by analysis type
    - Embedding generation latency
    - Database query performance
@@ -172,11 +135,45 @@ class ReportService {
 ### Future Considerations
 
 1. **Manual Override**:
+
    - User-triggered deep analysis
    - Usage limits and quotas
    - Premium feature potential
 
 2. **Optimization Opportunities**:
+
    - Dynamic TTL adjustment
    - Predictive model selection
-   - Automated threshold tuning 
+   - Automated threshold tuning
+
+3. **Planned Feature: Inline Editing + RAG Dialog (2025 Q3)**
+
+   To enhance user interaction with AI-generated feedback, we propose a dual-mode interface:
+
+   - **Inline Input Box (🖊️)**:
+
+     - Let users click directly on the AI-generated text to make manual edits.
+     - Saves instantly upon blur or Enter key.
+     - Stored as `userEditedText` alongside `originalText`.
+
+   - **RAG Deep Dive Button (💬)**:
+
+     - Floating icon appears next to each section.
+     - When clicked, opens a dialog window for context-aware discussion with the AI.
+     - Uses embedding + vector search to retrieve related past feedback or goals.
+     - Returns improved or rephrased suggestions powered by GPT-4.
+
+   - **UX Recommendation**:
+
+     - Default to showing both options side-by-side: “✏️ Edit” and “💬 Refine with AI”.
+     - Inline editing for quick changes.
+     - Dialog-based RAG for deeper explanation or regeneration.
+
+   - **Technical Notes**:
+
+     - Requires updating `AIFeedback.jsx` to support `editable` state and RAG dialog trigger.
+     - Vector embeddings only generated on RAG interaction, not on inline edits.
+     - Store edit history for versioning (optional).
+
+   This hybrid UI maximizes flexibility and empowers users to either tweak or co-create feedback efficiently.
+
