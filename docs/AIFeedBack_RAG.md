@@ -4,7 +4,7 @@ Related Files:
 - `server/services/RAGService.js`: Core RAG service implementation
 - `server/services/ReportService.js`: Report generation and processing service
 - `client/src/components/ProgressReport/AIFeedback.jsx`: Frontend AI feedback display component
-- `server/models/Report.js`: Report data model
+- `server/models/Report.js`: Report data model with embedding support
 - `focus-app/docs/aifeedback_rag_futureFeature.md`: Future feature planning documentation
 - `focus-app/docs/AI_dataflow.md`: AI data flow documentation
 
@@ -87,26 +87,25 @@ console.log('[RAG] Using cached embedding from previous analysis');
 
 ### Phase 1: Basic RAG Implementation
 Planned Period: 2025/06/25-2025/07/05
-- [ ] RAG Basic Service Setup
+- [x] RAG Basic Service Setup
   - Vector embedding generation
   - Similarity search
   - Context enhancement
-- [ ] Vector Storage Configuration
+- [x] Vector Storage Configuration
   - MongoDB vector index setup
   - Cache mechanism
-- [ ] Basic Model Selection Logic
-  - GPT-3.5 vs GPT-4 selection criteria
+- [x] Basic Model Selection Logic
+  - GPT-4o-mini vs GPT-o4-mini selection criteria
   - Cost optimization strategy
 
 ### Phase 2: Deep Analysis Features
 Planned Period: 2025/07/06-2025/07/15
-- [ ] Time Trigger Logic Implementation
+- [x] Time Trigger Logic Implementation
   - 21+ days analysis trigger
-  - Cross-month analysis handling
-- [ ] Edge Case Handling
-  - Milestone detection
-  - User-requested deep analysis
-- [ ] Cache Mechanism Optimization
+  - Achievement pattern detection
+- [x] Edge Case Handling
+  - User-requested deep analysis (with custom focus areas)
+- [x] Cache Mechanism Optimization
   - TTL strategy implementation
   - Cache update logic
 

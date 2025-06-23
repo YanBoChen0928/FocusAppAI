@@ -12,8 +12,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Cache embeddings for 1 hour
-const embeddingCache = new NodeCache({ stdTTL: 3600 });
+// Cache embeddings for 1 hour by default, 24 hours for deep analysis
+const embeddingCache = new NodeCache({ 
+  stdTTL: 3600,
+  checkperiod: 120
+});
 
 class RAGService {
   /**
@@ -23,6 +26,9 @@ class RAGService {
    */
   static async _generateEmbedding(content) {
     try {
+      console.time('[RAG] Embedding generation');
+      console.log('[RAG] Generating embedding for content length:', content.length);
+
       const response = await openai.embeddings.create({
         model: "text-embedding-ada-002",
         input: content,
@@ -33,9 +39,10 @@ class RAGService {
         throw new Error('No embedding received from OpenAI');
       }
 
+      console.timeEnd('[RAG] Embedding generation');
       return response.data[0].embedding;
     } catch (error) {
-      console.error('Failed to generate embedding:', error);
+      console.error('[RAG] Failed to generate embedding:', error);
       throw error;
     }
   }
@@ -48,21 +55,34 @@ class RAGService {
    */
   static async enhancePromptWithContext(basePrompt, goalId) {
     try {
+      console.time('[RAG] Context retrieval');
+      
       // Get relevant historical reports
       const relevantReports = await this._getRelevantReports(goalId);
       
+      console.log('[RAG] Retrieved relevant reports:', relevantReports.length);
+      
       if (!relevantReports.length) {
-        console.log('No relevant historical context found');
+        console.warn('[RAG] No relevant historical context found for goal:', goalId);
         return basePrompt;
       }
 
       // Extract key insights from historical reports
       const historicalContext = this._extractKeyInsights(relevantReports);
+      console.log('[RAG] Historical context length:', historicalContext.length);
 
       // Combine with base prompt
-      return this._combinePrompts(basePrompt, historicalContext);
+      const enhancedPrompt = this._combinePrompts(basePrompt, historicalContext);
+      console.log('[RAG] Enhanced prompt length:', enhancedPrompt.length);
+
+      console.timeEnd('[RAG] Context retrieval');
+      return enhancedPrompt;
     } catch (error) {
-      console.error('Failed to enhance prompt with RAG:', error);
+      console.error('[RAG] Context retrieval failed:', {
+        error,
+        goalId,
+        stage: 'enhancePromptWithContext'
+      });
       return basePrompt; // Fallback to base prompt
     }
   }
@@ -74,6 +94,9 @@ class RAGService {
    */
   static async saveReportEmbedding(report) {
     try {
+      console.time('[RAG] Save embedding');
+      
+      // Generate embedding
       const embedding = await this._generateEmbedding(report.content);
       
       // Update report with embedding
@@ -84,10 +107,18 @@ class RAGService {
         }
       });
 
-      // Cache the embedding
-      embeddingCache.set(`embedding:${report._id}`, embedding);
+      // Cache the embedding with extended TTL for deep analysis
+      const cacheTTL = report.analysisType === 'deep' ? 86400 : 3600; // 24h for deep, 1h for basic
+      embeddingCache.set(`embedding:${report._id}`, embedding, cacheTTL);
+
+      console.log('[RAG] Cache status:', {
+        hitRate: embeddingCache.getStats().hitRate,
+        keys: embeddingCache.getStats().keys
+      });
+
+      console.timeEnd('[RAG] Save embedding');
     } catch (error) {
-      console.error('Failed to save report embedding:', error);
+      console.error('[RAG] Failed to save report embedding:', error);
       throw error;
     }
   }
@@ -107,9 +138,19 @@ class RAGService {
       .sort({ createdAt: -1 })
       .limit(10); // Get last 10 reports
 
+      // Log cache performance
+      console.log('[RAG] Cache performance:', {
+        hitRate: embeddingCache.getStats().hitRate,
+        keys: embeddingCache.getStats().keys
+      });
+
       return reports;
     } catch (error) {
-      console.error('Failed to get relevant reports:', error);
+      console.error('[RAG] Failed to get relevant reports:', {
+        error,
+        goalId,
+        stage: '_getRelevantReports'
+      });
       return [];
     }
   }
@@ -120,22 +161,27 @@ class RAGService {
    * @returns {string} Extracted insights
    */
   static _extractKeyInsights(reports) {
-    const insights = reports.map(report => {
-      const content = typeof report.content === 'string' 
-        ? JSON.parse(report.content) 
-        : report.content;
+    try {
+      const insights = reports.map(report => {
+        const content = typeof report.content === 'string' 
+          ? JSON.parse(report.content) 
+          : report.content;
 
-      return {
-        date: report.createdAt,
-        completionRate: report.analysis.completionRate,
-        keyPoints: content.sections
-          ?.filter(s => s.title.includes('Key') || s.title.includes('Pattern'))
-          ?.map(s => s.content)
-          ?.join('\n') || ''
-      };
-    });
+        return {
+          date: report.createdAt,
+          completionRate: report.analysis.completionRate,
+          keyPoints: content.sections
+            ?.filter(s => s.title.includes('Key') || s.title.includes('Pattern'))
+            ?.map(s => s.content)
+            ?.join('\n') || ''
+        };
+      });
 
-    return this._formatInsights(insights);
+      return this._formatInsights(insights);
+    } catch (error) {
+      console.error('[RAG] Failed to extract insights:', error);
+      return '';
+    }
   }
 
   /**
