@@ -8,6 +8,81 @@ Related Files:
 - `focus-app/docs/aifeedback_rag_futureFeature.md`: Future feature planning documentation
 - `focus-app/docs/AI_dataflow.md`: AI data flow documentation
 
+## Console Logging Strategy
+
+### RAG Process Logging
+```javascript
+// In ReportService.js
+console.log('[RAG] Analysis type:', isDeepAnalysis ? 'Deep Analysis' : 'Basic Analysis');
+console.log('[RAG] Time range:', { startDate, endDate, daysDifference });
+console.log('[RAG] Model selected:', isDeepAnalysis ? 'GPT-o4-mini + RAG' : 'GPT-4o-mini');
+
+// In RAGService.js
+console.log('[RAG] Generating embedding for content length:', content.length);
+console.log('[RAG] Retrieved relevant reports:', relevantReports.length);
+console.log('[RAG] Historical context length:', historicalContext.length);
+console.log('[RAG] Enhanced prompt length:', enhancedPrompt.length);
+
+// Cache status
+console.log('[RAG] Cache hit rate:', embeddingCache.getStats().hitRate);
+console.log('[RAG] Cache keys count:', embeddingCache.getStats().keys);
+```
+
+### Performance Logging
+```javascript
+// Timing measurements
+console.time('[RAG] Total analysis time');
+console.time('[RAG] Embedding generation');
+console.time('[RAG] Context retrieval');
+console.time('[RAG] Prompt enhancement');
+
+// Log completion
+console.timeEnd('[RAG] Embedding generation');
+console.timeEnd('[RAG] Context retrieval');
+console.timeEnd('[RAG] Prompt enhancement');
+console.timeEnd('[RAG] Total analysis time');
+```
+
+### Error Logging
+```javascript
+// Model errors and fallbacks
+console.error('[RAG] GPT-o4-mini API error:', error);
+console.warn('[RAG] Falling back to GPT-4o-mini due to API error');
+console.log('[RAG] Model fallback successful, using GPT-4o-mini');
+
+// Embedding errors
+console.error('[RAG] Failed to generate embedding:', error);
+console.warn('[RAG] Proceeding without embedding due to error');
+
+// Context retrieval errors
+console.error('[RAG] Context retrieval failed:', {
+  error,
+  goalId,
+  reportsCount: relevantReports.length
+});
+console.warn('[RAG] No relevant historical context found for goal:', goalId);
+
+// Cache errors
+console.error('[RAG] Cache operation failed:', error);
+console.warn('[RAG] Cache miss for embedding:', reportId);
+
+// General process errors
+console.error('[RAG] Process failed:', {
+  stage: 'analysis/embedding/retrieval',
+  error,
+  context: {
+    goalId,
+    timeRange,
+    modelUsed
+  }
+});
+
+// Recovery and fallback logs
+console.warn('[RAG] Falling back to basic analysis due to error:', error);
+console.log('[RAG] Recovery successful, proceeding with basic analysis');
+console.log('[RAG] Using cached embedding from previous analysis');
+```
+
 ## Implementation Status and Plan
 
 ### Phase 1: Basic RAG Implementation
@@ -109,14 +184,14 @@ class ReportService {
     const isDeepAnalysis = shouldUseDeepAnalysis(startDate, endDate);
     
     if (isDeepAnalysis) {
-      // Use RAG + GPT-4
+      // Use RAG + GPT-o4-mini
       const enhancedPrompt = await RAGService.enhancePromptWithContext(
         basePrompt,
         goalId
       );
       
       return await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-o4-mini",
         messages: [
           { role: "system", content: "You are a goal-oriented AI assistant." },
           { role: "user", content: enhancedPrompt }
@@ -125,9 +200,9 @@ class ReportService {
         max_tokens: 500
       });
     } else {
-      // Use basic GPT-3.5
+      // Use basic GPT-4o-mini
       return await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: "You are a goal-oriented AI assistant." },
           { role: "user", content: basePrompt }
