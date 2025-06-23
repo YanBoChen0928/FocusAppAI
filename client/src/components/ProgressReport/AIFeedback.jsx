@@ -250,39 +250,63 @@ export default function AIFeedback({ goalId }) {
     
     const lines = content.split('\n');
     let formattedLines = [];
-    let bulletCount = 1;
+    let subCount = 1;     // For numbered items within sections
+    let isInActionableSection = false;
+    let currentSubsection = '';  // Track current subsection (A, B, C)
     
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
+      let line = lines[i].trim();
       
-      if (currentPopoverTitle === "3. Actionable Suggestions") {
-        if (line.startsWith('- ')) {
-          // For actionable section, convert dash to number and make title bold
-          const [title, ...rest] = line.substring(2).split(':');
+      if (!line) {
+        formattedLines.push('');
+        continue;
+      }
+      
+      // Check if we're in Actionable Suggestions section
+      if (line.startsWith('3. Actionable Suggestions')) {
+        isInActionableSection = true;
+        formattedLines.push(line);
+        continue;
+      }
+      
+      if (isInActionableSection) {
+        // Handle subsection headers (Next Steps, Improvements, Motivation)
+        if (line.match(/^[A-C]\.\s/)) {
+          currentSubsection = line;
+          if (formattedLines.length > 0) formattedLines.push('');  // Add space before new subsection
+          formattedLines.push(`<span class="section-title">${line}</span>`);
+          subCount = 1;  // Reset counter for new subsection
+          continue;
+        }
+        
+        // Handle numbered items or bullet points in Actionable section
+        if (line.startsWith('- ') || /^\d+\./.test(line)) {
+          // Remove existing numbering/bullet
+          let cleanLine = line.replace(/^-\s+|^\d+\.\s+/, '');
           
-          // Add empty line before new numbered item (except first item)
-          if (bulletCount > 1) {
+          // Split into title and explanation if there's a colon
+          const [title, ...rest] = cleanLine.split(':');
+          
+          // Add space before new item (except first item)
+          if (subCount > 1) {
             formattedLines.push('');
           }
           
+          // Format with proper numbering
           formattedLines.push(
-            `${bulletCount}. <span class="bold-title">${title.trim()}</span>:${rest.length ? rest.join(':') : ''}`
+            `${subCount}. <span class="bold-title">${title.trim()}</span>${rest.length ? ': ' + rest.join(':').trim() : ''}`
           );
-          bulletCount++;
+          subCount++;
         } else {
-          // For regular lines, check if it's a concluding paragraph
-          if (line.trim() && bulletCount > 1) {
-            // Add empty line before concluding paragraph
-            formattedLines.push('');
-          }
+          // Regular text lines in Actionable section
           formattedLines.push(line);
         }
       } else {
+        // Handle bullet points in other sections
         if (line.startsWith('- ')) {
-          // For other sections, keep dash and make title bold
           const [title, ...rest] = line.substring(2).split(':');
           formattedLines.push(
-            `- <span class="bold-title">${title.trim()}</span>:${rest.length ? rest.join(':') : ''}`
+            `- <span class="bold-title">${title.trim()}</span>${rest.length ? ': ' + rest.join(':').trim() : ''}`
           );
         } else {
           formattedLines.push(line);
@@ -543,45 +567,41 @@ export default function AIFeedback({ goalId }) {
                   .filter(section => section.title !== "---" && section.title.trim() !== "")
                   .map((section, index) => {
                     const title = section.title.replace(/^\*\*|\*\*$/g, '').trim();
-                    let content = section.content;
-                    if (title.toLowerCase().includes('actionable')) {
-                      let count = 1;
-                      content = content.replace(/- /g, () => `${count++}. `);
-                    }
+                    // Remove the preprocessing of content
+                    const content = section.content;
                     
-                    // Render button to trigger Popover
                     return (
                       <Box 
                         key={index}
                         sx={{
-                          mb: 0.8, /* Reduced margin between buttons */
+                          mb: 0.8,
                           width: '100%'
                         }}
                       >
                         <Button
-                          variant="text" /* Flat button */
+                          variant="text"
                           fullWidth
                           onClick={(e) => handlePopoverOpen(e, title, content)}
                           endIcon={<KeyboardArrowDownIcon sx={{ color: '#bbb' }}/>}
                           sx={{
-                            justifyContent: 'space-between', /* Push icon to right */
+                            justifyContent: 'space-between',
                             textAlign: 'left',
-                            padding: '10px 8px', /* Adjust padding */
-                            borderRadius: '8px', /* Apple-like radius */
-                            color: '#333', /* Standard text color */
-                            backgroundColor: '#ffffff', /* White background */
-                            border: '1px solid #e5e5e5', /* Subtle border */
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)', /* Very subtle shadow */
+                            padding: '10px 8px',
+                            borderRadius: '8px',
+                            color: '#333',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e5e5e5',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                             '&:hover': {
-                              backgroundColor: '#f9f9f9', /* Slight hover bg */
+                              backgroundColor: '#f9f9f9',
                               borderColor: '#ddd'
                             },
-                            fontWeight: 400, /* Regular weight */
-                            fontSize: '0.875rem', /* Standard body font size */
+                            fontWeight: 400,
+                            fontSize: '0.875rem',
                             textTransform: 'none'
                           }}
                         >
-                          {title} {/* Removed bullet point */}
+                          {title}
                         </Button>
                       </Box>
                     );
