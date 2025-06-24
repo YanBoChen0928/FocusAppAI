@@ -188,7 +188,6 @@
 }
 
 /* Tablet layout (771px - 1100px) - Two Columns */
-/* Changed breakpoint from 600px and added max-width */
 @media (min-width: 771px) and (max-width: 1100px) {
   .app-header {
     margin-bottom: 2rem;
@@ -203,21 +202,6 @@
     overflow: visible !important;
     width: 100%;
     box-sizing: border-box;
-  }
-
-  /* Force hide horizontal scrollbar for main content container */
-  .main-content,
-  .main-content > div {
-    overflow-x: hidden !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Override any MUI styles that might cause horizontal scroll */
-  :global(.MuiBox-root[class*="css-"]) {
-    overflow-x: hidden !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
   }
 
   /* Sidebar */
@@ -244,6 +228,18 @@
     flex: 0 0 65%;
     order: unset;
     overflow: visible !important;
+  }
+
+  /* Ensure only one scrollbar for the main container */
+  .home-container {
+    overflow-y: auto !important;
+  }
+
+  /* Remove scrollbars from all child containers */
+  .main-content,
+  .main-content > div,
+  .MuiBox-root {
+    overflow-y: visible !important;
   }
 }
 
