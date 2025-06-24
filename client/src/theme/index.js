@@ -119,6 +119,20 @@ const theme = createTheme({
   shape,
   components: {
     // Custom default props and styles for MUI components
+    MuiBox: {
+      styleOverrides: {
+        root: {
+          overflowX: 'hidden !important',
+          overflowY: 'visible !important',
+          height: 'fit-content !important',
+          minHeight: 'unset !important',
+          width: '100% !important',
+          boxSizing: 'border-box !important',
+          display: 'flex !important',
+          flexDirection: 'column !important',
+        }
+      }
+    },
     MuiButton: {
       styleOverrides: {
         root: {

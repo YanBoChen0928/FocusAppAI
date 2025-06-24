@@ -412,8 +412,9 @@ export default function WeeklyDailyCards({ goal, dailyCards = [], onCardsUpdate,
     <Box className={styles.container} ref={containerRef} sx={{ 
       maxWidth: '100%', 
       width: '100%', 
-      overflow: 'hidden',
-      boxSizing: 'border-box'
+      overflow: 'visible',
+      boxSizing: 'border-box',
+      height: 'fit-content'
     }}>
       <Box className={styles.header}>
         <Typography variant="h6" className={styles.title}>
@@ -460,7 +461,7 @@ export default function WeeklyDailyCards({ goal, dailyCards = [], onCardsUpdate,
         <Box sx={{ 
           width: '100%', 
           pb: 1,
-          overflow: 'hidden'
+          overflow: 'visible'
         }}>
           <Box 
             sx={{ 
@@ -468,7 +469,9 @@ export default function WeeklyDailyCards({ goal, dailyCards = [], onCardsUpdate,
               gridTemplateColumns: 'repeat(7, 1fr)',
               gap: 0.5,
               width: '100%',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              overflow: 'visible',
+              height: 'fit-content'
             }}
           >
             {currentWeekCards.map((card, index) => {

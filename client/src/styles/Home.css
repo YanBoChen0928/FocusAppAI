@@ -176,6 +176,34 @@
   overflow: visible !important;
   height: fit-content !important;
   min-height: unset !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Specific override for the container in question */
+:global(.MuiBox-root.css-eojpjh) {
+  overflow: visible !important;
+  height: fit-content !important;
+  min-height: unset !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensure all MUI Box containers follow the same rules */
+:global(.goal-details.MuiBox-root),
+:global(.MuiBox-root.css-14nuhdb),
+:global(.MuiBox-root.css-14mfdnh) {
+  overflow: visible !important;
+  height: fit-content !important;
+  min-height: unset !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 /* Ensure ProgressReport container follows the same rules */

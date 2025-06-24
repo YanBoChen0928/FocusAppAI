@@ -124,4 +124,57 @@ Files to check for overflow settings:
 - Preserve text overflow handling (ellipsis, etc.)
 - Test with various content lengths
 - Ensure accessibility is maintained
-- Document any special cases or exceptions 
+- Document any special cases or exceptions
+
+# Layout Refinement Plan - MUI Box Global Style Implementation
+
+Related Files:
+- `focus-app/client/src/theme/index.js`: Theme configuration
+- `focus-app/client/src/styles/Home.css`: Main layout styles
+- `focus-app/client/src/styles/GlobalStyles.css`: Global styles
+- `focus-app/client/src/App.css`: App-level styles
+
+## MUI Box Global Style Implementation
+
+### Theme Configuration
+Added global style overrides for MUI Box components in the theme configuration:
+
+```javascript
+MuiBox: {
+  styleOverrides: {
+    root: {
+      overflowX: 'hidden !important',
+      overflowY: 'visible !important',
+      height: 'fit-content !important',
+      minHeight: 'unset !important',
+      width: '100% !important',
+      boxSizing: 'border-box !important',
+      display: 'flex !important',
+      flexDirection: 'column !important',
+    }
+  }
+}
+```
+
+This ensures that:
+1. 横向滚动条被隐藏 (overflowX: hidden)
+2. 纵向内容自动展开 (overflowY: visible)
+3. 高度自适应内容 (height: fit-content)
+4. 宽度自适应父容器 (width: 100%)
+5. 使用flex布局确保内容正确流动
+
+### Implementation Details
+- 使用 `!important` 确保样式优先级
+- 移除了固定高度限制
+- 确保所有 Box 组件都使用相同的布局规则
+- 保持响应式设计的完整性
+
+### Benefits
+1. 统一的布局行为
+2. 更好的内容流动
+3. 避免不必要的滚动条
+4. 提高代码维护性
+
+### Notes
+- 这个更改会影响所有 MUI Box 组件
+- 如果特定组件需要不同的行为，需要单独覆盖样式 
