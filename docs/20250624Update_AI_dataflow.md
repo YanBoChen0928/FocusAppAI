@@ -683,3 +683,71 @@ class AIService {
 
 export default AIService;
 ```
+
+## Other Future Feature for Milestone RAG
+
+Related Files:
+- `server/services/RAGService.js`
+- `server/services/ReportService.js`
+- `server/models/Progress.js`
+- `server/models/Report.js`
+
+### Milestone Detection in RAG System
+
+1. **Data Flow for Milestone Detection**:
+```
+┌──────────────┐     1      ┌──────────────┐     2      ┌──────────────┐
+│   Progress   │────────────►              │────────────►              │
+│    Data      │            │  Milestone   │            │    RAG       │
+│              │            │  Detection   │            │  Trigger     │
+└──────────────┘            └──────────────┘            └──────────────┘
+                                   │                           │
+                                   │         3                 │
+                                   ▼                          ▼
+                            ┌──────────────┐          ┌──────────────┐
+                            │  Achievement │          │   Enhanced   │
+                            │   System    │          │   Analysis   │
+                            └──────────────┘          └──────────────┘
+```
+
+2. **MongoDB Schema Updates**:
+```javascript
+// Future Progress Schema Extension
+{
+  // ... existing fields ...
+  milestones: [{
+    type: String,        // 'progress', 'time', 'task', 'custom'
+    name: String,        // milestone identifier
+    achieved: Boolean,   // achievement status
+    achievedAt: Date,    // achievement date
+    criteria: {          // achievement criteria
+      type: String,      // criteria type
+      value: Mixed,      // target value
+      comparison: String // comparison operator
+    }
+  }],
+  achievements: [{
+    milestoneId: ObjectId,
+    unlockedAt: Date,
+    reward: Mixed
+  }]
+}
+```
+
+3. **Implementation Strategy**:
+   - Milestone detection integrated with RAG trigger system
+   - Achievement tracking in Progress collection
+   - Vector embeddings for milestone-related analysis
+   - Enhanced prompts for milestone achievements
+
+4. **RAG Enhancement for Milestones**:
+   - Include milestone data in vector context
+   - Special analysis for achievement patterns
+   - Personalized feedback based on milestones
+   - Long-term progress tracking
+
+5. **Technical Considerations**:
+   - Efficient milestone checking algorithms
+   - Scalable achievement storage
+   - Real-time update capabilities
+   - Performance optimization for large datasets
