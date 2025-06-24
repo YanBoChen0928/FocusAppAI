@@ -201,6 +201,23 @@
     padding: 16px;
     gap: 20px;
     overflow: visible !important;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Force hide horizontal scrollbar for main content container */
+  .main-content,
+  .main-content > div {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Override any MUI styles that might cause horizontal scroll */
+  :global(.MuiBox-root[class*="css-"]) {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Sidebar */
