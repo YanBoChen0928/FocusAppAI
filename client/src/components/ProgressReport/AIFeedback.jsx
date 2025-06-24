@@ -51,20 +51,32 @@ import {
 function DraggablePopover({ children }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: 'feedback-popover',
+    onDragStart: () => setIsDragging(true),
+    onDragEnd: () => {
+      setIsDragging(false);
+      if (transform) {
+        setDragPosition(prev => ({
+          x: prev.x + transform.x,
+          y: prev.y + transform.y
+        }));
+      }
+    }
   });
+
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
 
   const style = {
     position: 'fixed',
     top: '50%',
     left: '50%',
-    transform: transform ? 
-      `translate(-50%, -50%) translate(${transform.x}px, ${transform.y}px)` : 
-      'translate(-50%, -50%)',
+    transform: isDragging && transform ? 
+      `translate(-50%, -50%) translate(${dragPosition.x + transform.x}px, ${dragPosition.y + transform.y}px)` :
+      `translate(-50%, -50%) translate(${dragPosition.x}px, ${dragPosition.y}px)`,
     zIndex: 1300,
     touchAction: 'none'
   };
 
-  // Support render props pattern and add optional chaining
   return children?.({
     ref: setNodeRef,
     style,
@@ -101,6 +113,7 @@ export default function AIFeedback({ goalId }) {
   // Handle popover close
   const handlePopoverClose = () => {
     setPopoverAnchorEl(null);
+    setDragPosition({ x: 0, y: 0 }); // Reset position when closing
   };
   
   const isPopoverOpen = Boolean(popoverAnchorEl);
@@ -348,7 +361,16 @@ export default function AIFeedback({ goalId }) {
   };
 
   return (
-    <DndContext>
+    <DndContext
+      onDragEnd={(event) => {
+        if (event.delta) {
+          setDragPosition(prev => ({
+            x: prev.x + event.delta.x,
+            y: prev.y + event.delta.y
+          }));
+        }
+      }}
+    >
       <Paper 
         elevation={2} /* Changed from 8 to 2 */
         className="ai-feedback-paper"
@@ -522,7 +544,12 @@ export default function AIFeedback({ goalId }) {
                       md: '380px',
                       lg: '60vw'
                     },
-                    transform: 'none !important'
+                    minHeight: '200px',
+                    maxHeight: '80vh',
+                    height: 'auto',
+                    transform: 'none !important',
+                    display: 'flex',
+                    flexDirection: 'column'
                   },
                   '& .MuiBackdrop-root': {
                     backgroundColor: 'transparent'
