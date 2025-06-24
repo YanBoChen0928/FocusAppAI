@@ -176,6 +176,12 @@ export default function Sidebar({
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        '& > *': {
+          maxWidth: '100%',
+          boxSizing: 'border-box'
+        },
         ...sx
       }}
     >

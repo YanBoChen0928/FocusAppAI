@@ -243,6 +243,15 @@ export default function GoalCard({ goal, onPriorityChange, onDateChange, onGoalA
             <Box 
               component="span" 
               className={styles.priorityContainer}
+              sx={{
+                maxWidth: '100%',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                '& .MuiChip-root': {
+                  maxWidth: 'calc(100% - 16px)',
+                  overflow: 'hidden'
+                }
+              }}
             >
               <Chip
                 size="small"
