@@ -47,28 +47,30 @@ import {
 // Last modified: 2025-06-21
 // Changes: Added paragraph spacing using MUI styling system
 
-// Draggable wrapper component
+// Draggable wrapper component that maintains original positioning behavior
 function DraggablePopover({ children }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: 'feedback-popover',
   });
-  
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    position: 'absolute',
-    zIndex: 1300,
-    touchAction: 'none'
-  } : {
-    position: 'absolute',
+
+  const style = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: transform ? 
+      `translate(-50%, -50%) translate(${transform.x}px, ${transform.y}px)` : 
+      'translate(-50%, -50%)',
     zIndex: 1300,
     touchAction: 'none'
   };
 
-  return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      {children}
-    </div>
-  );
+  // Support render props pattern and add optional chaining
+  return children?.({
+    ref: setNodeRef,
+    style,
+    dragAttributes: attributes ?? {},
+    dragListeners: listeners ?? {}
+  });
 }
 
 export default function AIFeedback({ goalId }) {
@@ -91,13 +93,7 @@ export default function AIFeedback({ goalId }) {
   
   // Handle popover open
   const handlePopoverOpen = (event, title, content) => {
-    // Find the vision-section element
-    const visionSection = document.querySelector('.vision-section.MuiBox-root');
-    if (visionSection && window.innerWidth >= 1101) {
-      setPopoverAnchorEl(visionSection);
-    } else {
-      setPopoverAnchorEl(event.currentTarget);
-    }
+    setPopoverAnchorEl(event.currentTarget);
     setCurrentPopoverTitle(title);
     setCurrentPopoverContent(content);
   };
@@ -489,140 +485,149 @@ export default function AIFeedback({ goalId }) {
         </Dialog>
 
         {/* Popover wrapped with DraggablePopover */}
-        <DraggablePopover>
-          <Popover
-            id={popoverId}
-            open={isPopoverOpen}
-            anchorEl={popoverAnchorEl}
-            onClose={(event, reason) => {
-              if (reason !== 'backdropClick') {
-                handlePopoverClose();
-              }
-            }}
-            disablePortal={true}
-            disableEnforceFocus
-            disableRestoreFocus
-            disableScrollLock={true}
-            keepMounted
-            BackdropProps={{
-              style: { pointerEvents: 'none' }
-            }}
-            sx={{
-              pointerEvents: 'none',
-              '& .MuiPopover-paper': {
-                pointerEvents: 'auto',
-                position: 'static',
-                width: {
-                  xs: '90vw',
-                  sm: '90vw',
-                  md: '380px',
-                  lg: '60vw'
-                }
-              },
-              '& .MuiBackdrop-root': {
-                backgroundColor: 'transparent'
-              }
-            }}
-            PaperProps={{
-              elevation: 0,
-              sx: {
-                borderRadius: '14px',
-                boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(0,0,0,0.05)',
-                overflow: 'hidden'
-              }
-            }}
-          >
-            <Card sx={{ 
-              boxShadow: 'none', 
-              backgroundColor: '#fff',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%'
-            }}>
-              <CardHeader
-                title={currentPopoverTitle}
-                action={
-                  <IconButton 
-                    aria-label="close" 
-                    onClick={handlePopoverClose}
-                    size="small"
+        {isPopoverOpen && (
+          <DraggablePopover>
+            {({ ref, style, dragAttributes, dragListeners }) => (
+              <Popover
+                ref={ref}
+                style={style}
+                id={popoverId}
+                open={isPopoverOpen}
+                anchorEl={popoverAnchorEl}
+                onClose={() => {}}
+                disablePortal={false}
+                disableEnforceFocus
+                disableRestoreFocus
+                disableScrollLock={true}
+                keepMounted
+                anchorOrigin={{
+                  vertical: 'center',
+                  horizontal: 'center',
+                }}
+                transformOrigin={{
+                  vertical: 'center',
+                  horizontal: 'center',
+                }}
+                BackdropProps={{
+                  style: { pointerEvents: 'none' }
+                }}
+                sx={{
+                  pointerEvents: 'auto',
+                  '& .MuiPopover-paper': {
+                    pointerEvents: 'auto',
+                    position: 'static',
+                    width: {
+                      xs: '90vw',
+                      sm: '90vw',
+                      md: '380px',
+                      lg: '60vw'
+                    },
+                    transform: 'none !important'
+                  },
+                  '& .MuiBackdrop-root': {
+                    backgroundColor: 'transparent'
+                  }
+                }}
+                PaperProps={{
+                  elevation: 0,
+                  sx: {
+                    borderRadius: '14px',
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                    overflow: 'hidden'
+                  }
+                }}
+              >
+                <Card sx={{ 
+                  boxShadow: 'none', 
+                  backgroundColor: '#fff',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%'
+                }}>
+                  <CardHeader
+                    title={
+                      <div 
+                        {...dragAttributes} 
+                        {...dragListeners}
+                        style={{ cursor: 'grab' }}
+                      >
+                        {currentPopoverTitle}
+                      </div>
+                    }
+                    action={
+                      <IconButton 
+                        aria-label="close" 
+                        onClick={handlePopoverClose}
+                        size="small"
+                        sx={{ 
+                          color: '#888',
+                          padding: '8px',
+                          backgroundColor: 'rgba(0,0,0,0.05)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0,0,0,0.1)'
+                          }
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    }
                     sx={{ 
-                      color: '#888',
-                      padding: '8px',
-                      backgroundColor: 'rgba(0,0,0,0.05)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0,0,0,0.1)'
+                      py: 1,
+                      px: 2,
+                      backgroundColor: '#f8f8f8',
+                      borderBottom: '1px solid #eee',
+                      '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
+                      width: '100%',
+                      '&:active': {
+                        cursor: 'grabbing'
                       }
                     }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                }
-                titleTypographyProps={{
-                  variant: 'subtitle2',
-                  sx: { 
-                    fontWeight: 600, 
-                    color: '#1d1d1f',
-                    fontSize: '1.1rem'
-                  }
-                }}
-                sx={{ 
-                  py: 1,
-                  px: 2,
-                  backgroundColor: '#f8f8f8',
-                  borderBottom: '1px solid #eee',
-                  '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
-                  width: '100%',
-                  cursor: 'grab',
-                  '&:active': {
-                    cursor: 'grabbing'
-                  }
-                }}
-              />
-              <CardContent sx={{
-                pt: 1.5,
-                pb: 2,
-                px: 2,
-                width: '100%',
-                height: '100%',
-                overflow: 'auto'
-              }}>
-                <Typography
-                  variant="body2"
-                  component="div"
-                  sx={{
-                    whiteSpace: 'pre-line',
-                    lineHeight: 1.6,
-                    color: '#333',
-                    fontSize: '0.85rem',
+                  />
+                  <CardContent sx={{
+                    pt: 1.5,
+                    pb: 2,
+                    px: 2,
                     width: '100%',
-                    '& .bold-title': {
-                      fontWeight: 600,
-                      color: '#1d1d1f',
-                      display: 'inline'
-                    },
-                    '& p': {
-                      marginBottom: '1rem',
-                      width: '100%'
-                    },
-                    '& > div': {
-                      marginBottom: '1rem',
-                      width: '100%'
-                    },
-                    '& > div + div': {
-                      marginTop: '1rem'
-                    }
-                  }}
-                  dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent).split('\n').map(line => 
-                    line.trim() ? `<div>${line}</div>` : '<div>&nbsp;</div>'
-                  ).join('')}}
-                />
-              </CardContent>
-            </Card>
-          </Popover>
-        </DraggablePopover>
+                    height: '100%',
+                    overflow: 'auto'
+                  }}>
+                    <Typography
+                      variant="body2"
+                      component="div"
+                      sx={{
+                        whiteSpace: 'pre-line',
+                        lineHeight: 1.6,
+                        color: '#333',
+                        fontSize: '0.85rem',
+                        width: '100%',
+                        '& .bold-title': {
+                          fontWeight: 600,
+                          color: '#1d1d1f',
+                          display: 'inline'
+                        },
+                        '& p': {
+                          marginBottom: '1rem',
+                          width: '100%'
+                        },
+                        '& > div': {
+                          marginBottom: '1rem',
+                          width: '100%'
+                        },
+                        '& > div + div': {
+                          marginTop: '1rem'
+                        }
+                      }}
+                      dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent).split('\n').map(line => 
+                        line.trim() ? `<div>${line}</div>` : '<div>&nbsp;</div>'
+                      ).join('')}}
+                    />
+                  </CardContent>
+                </Card>
+              </Popover>
+            )}
+          </DraggablePopover>
+        )}
 
         {/* AI Feedback Sections Container */} 
         <Box sx={{ px: 0, pt: 1, pb: 2, mt: '5px' /* Move sections up */ }}>

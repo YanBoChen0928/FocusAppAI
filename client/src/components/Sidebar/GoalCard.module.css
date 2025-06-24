@@ -33,47 +33,45 @@
 .goalTitle {
   display: flex;
   flex-direction: column;
+  margin: 0;
   width: 100%;
-  gap: 8px;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 8px;
-  margin-bottom: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #0D5E6D;
+  min-width: 0; /* Allow text to shrink */
 }
 
 .titleActions {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
-  margin-right: 4px;
+  width: 100%;
 }
 
 .goalTitleText {
+  display: block;
   width: 100%;
-  padding: 0;
-  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  max-height: 2.8em;
+  white-space: normal;
+  word-break: break-word;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0.5rem 0;
   line-height: 1.4;
-  order: 2;
+  min-height: 1.4em; /* At least one line */
+  max-height: none; /* Allow full height on mobile */
+  display: -webkit-box;
+  -webkit-line-clamp: initial; /* No line clamp on mobile */
+  -webkit-box-orient: vertical;
 }
 
 .priorityContainer {
   display: flex;
   align-items: center;
-  margin: 0;
-  flex-shrink: 0;
-  padding-right: 8px;
-  order: 1;
-  min-width: 80px; /* Ensure minimum width for the container */
+  margin-top: 4px;
+  width: 100%;
+  padding-right: 30px; /* Increased from 15px to 30px */
+  box-sizing: border-box;
 }
 
 .priorityChip {
@@ -84,8 +82,7 @@
   padding: 4px 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
-  min-width: fit-content;
+  margin-right: 30px; /* Increased from 15px to 30px */
 }
 
 .priorityChip:hover {
@@ -113,34 +110,39 @@
 
 /* Tablet layout (600px - 900px) */
 @media (min-width: 600px) {
-  .goalTitle {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .titleRow {
-    display: flex;
+  .goalCardHeader {
+    flex-direction: row;
     align-items: center;
-    width: 100%;
-    gap: 8px;
+    justify-content: space-between;
+  }
+  
+  .goalTitle {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
   }
   
   .goalTitleText {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    order: 2;
+    margin: 0 8px;
+    flex: 1;
+    min-width: 0; /* Allow text to shrink */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show up to two lines on tablet - increased from one */
+    -webkit-box-orient: vertical;
+    max-height: 2.8em; /* 2 lines × 1.4 line-height */
   }
   
   .priorityContainer {
-    margin: 0;
-    flex-shrink: 0;
-    order: 1;
-    min-width: 90px;
+    margin-top: 0;
+    margin-left: auto;
+    width: auto;
+    justify-content: flex-end;
+    min-width: 100px; /* Ensure enough space to display priority */
   }
-
-  .priorityChip {
-    min-width: fit-content;
+  
+  .dueDate {
+    width: auto; /* Adjust width for larger screens */
+    margin-top: 0;
   }
 }
 
@@ -160,37 +162,34 @@
   }
   
   .goalTitle {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .titleRow {
-    display: flex;
+    display: grid;
+    grid-template-columns: 15% 60% 25%;
     align-items: center;
     width: 100%;
-    gap: 8px;
   }
   
   .titleActions {
-    flex-shrink: 0;
+    width: auto;
+    grid-column: 1;
+    justify-content: flex-start;
   }
   
   .goalTitleText {
-    width: 100%;
-    padding: 0;
+    grid-column: 2;
+    padding: 0 8px;
     margin: 0;
-    order: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show up to two lines on desktop */
+    -webkit-box-orient: vertical;
+    max-height: 2.8em; /* 2 lines × 1.4 line-height */
   }
   
   .priorityContainer {
-    margin: 0;
-    flex-shrink: 0;
-    order: 1;
-    min-width: 100px;
-  }
-  
-  .priorityChip {
-    min-width: fit-content;
+    grid-column: 3;
+    margin-left: 0;
+    justify-content: flex-end;
   }
   
   .cardFooter {

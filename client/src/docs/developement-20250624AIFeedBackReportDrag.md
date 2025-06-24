@@ -13,6 +13,7 @@ Implement simple drag and drop functionality for the AIFeedback Popover using @d
 1. Add basic drag functionality to Popover
 2. Maintain existing responsive design
 3. Keep all current functionality intact
+4. Ensure proper z-index and positioning
 
 ### Implementation Steps
 1. Install Required Package
@@ -37,7 +38,23 @@ function DraggablePopover({ children }) {
   
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
+    position: 'fixed',
+    zIndex: 9999,
+    touchAction: 'none',
+    width: 'auto',
+    height: 'auto',
+    top: 0,
+    left: 0
+  } : {
+    position: 'fixed',
+    zIndex: 9999,
+    touchAction: 'none',
+    width: 'auto',
+    height: 'auto',
+    top: '30vh',
+    left: '50%',
+    transform: 'translateX(-50%)'
+  };
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
@@ -52,29 +69,53 @@ function DraggablePopover({ children }) {
 export default function AIFeedback({ goalId }) {
   return (
     <DndContext>
-      {/* Existing Dialog */}
-      
       {/* Wrap Popover with DraggablePopover */}
       <DraggablePopover>
         <Popover
           // Existing Popover configuration
-          {...existingProps}
+          sx={{
+            '& .MuiPopover-paper': {
+              position: 'static',
+              transform: 'none !important'
+            }
+          }}
+          PaperProps={{
+            sx: {
+              position: 'static'
+            }
+          }}
         >
           {/* Existing Popover content */}
         </Popover>
       </DraggablePopover>
-      
-      {/* Existing AI Feedback Sections */}
     </DndContext>
   );
 }
 ```
 
+### Key Implementation Details
+1. Fixed Positioning:
+   - Use `position: fixed` to ensure Popover stays above all content
+   - High `z-index: 9999` to maintain top layer position
+   - Initial centered position with `top: 30vh` and `left: 50%`
+
+2. Transform Handling:
+   - Use `transform: none !important` on Popover paper to prevent MUI's transform
+   - Apply drag transform through DraggablePopover wrapper
+   - Maintain smooth transition during drag
+
+3. Event Handling:
+   - Prevent event propagation to underlying elements
+   - Maintain existing click and interaction handlers
+   - Keep backdrop pointer events disabled
+
 ### Testing Focus
 - Verify smooth drag functionality
-- Ensure responsive layout remains intact
-- Check that all existing features work correctly
-- Verify performance and animation smoothness
+- Ensure Popover stays visible during drag
+- Check z-index handling with other elements
+- Verify responsive layout remains intact
+- Test all existing features still work
+- Check performance and animation smoothness
 
 ## Important Notes
 1. Keep existing responsive design
