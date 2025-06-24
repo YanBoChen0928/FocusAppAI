@@ -42,12 +42,14 @@
   align-items: center;
   width: 100%;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
 .titleActions {
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  margin-right: 4px;
 }
 
 .goalTitleText {
@@ -71,6 +73,7 @@
   flex-shrink: 0;
   padding-right: 8px;
   order: 1;
+  min-width: 80px; /* Ensure minimum width for the container */
 }
 
 .priorityChip {
@@ -81,7 +84,8 @@
   padding: 4px 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-right: 30px; /* Increased from 15px to 30px */
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .priorityChip:hover {
@@ -132,6 +136,11 @@
     margin: 0;
     flex-shrink: 0;
     order: 1;
+    min-width: 90px;
+  }
+
+  .priorityChip {
+    min-width: fit-content;
   }
 }
 
@@ -177,6 +186,11 @@
     margin: 0;
     flex-shrink: 0;
     order: 1;
+    min-width: 100px;
+  }
+  
+  .priorityChip {
+    min-width: fit-content;
   }
   
   .cardFooter {
