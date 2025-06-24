@@ -13,6 +13,8 @@
   margin: 0 auto;
   padding: 0;
   box-sizing: border-box;
+  overflow-y: auto; /* Main scrollbar */
+  overflow-x: hidden;
 }
 
 /* Header styles */
@@ -131,9 +133,10 @@
   padding: 12px;
   flex-grow: 1;
   box-sizing: border-box;
-  /* max-width: 1200px; 20250623*/
   margin-left: auto;
   margin-right: auto;
+  overflow: visible;
+  height: fit-content;
 }
 
 /* Ensure all main sections take full width on mobile and are visible */
@@ -144,12 +147,13 @@
   width: 100%;
   margin-bottom: 16px;
   padding: 1rem;
-  overflow-y: auto;
+  overflow: visible !important;
   background-color: #ffffff !important; /* Force white background with !important */
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
-  min-height: 600px; /* Increase minimum height for consistency */
+  height: fit-content !important;
+  min-height: unset;
 }
 
 /* Specific styles for each section in mobile view */
@@ -278,8 +282,9 @@
   .main-content > :nth-child(1),
   .main-content > :nth-child(2),
   .main-content > :nth-child(3) {
-    min-height: calc(100vh - 120px);
-    height: auto;
+    height: fit-content !important;
+    min-height: unset;
+    overflow: visible !important;
   }
 }
 
@@ -779,13 +784,14 @@ h3 {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 12px;
-  overflow-y: auto;
+  overflow: visible !important;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
   width: 100%;
-  min-height: 200px;
+  height: fit-content !important;
+  min-height: unset;
 }
 
 /* Specific styles for MUI Box components */
@@ -794,9 +800,11 @@ h3 {
 :global(.MuiBox-root.css-0) {
   padding: 12px !important;
   border-radius: 8px !important;
-  overflow-y: auto !important;
+  overflow: visible !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  height: fit-content !important;
+  min-height: unset !important;
 }
 
 @media (min-width: 771px) {
@@ -861,13 +869,14 @@ h3 {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 12px;
-  overflow-y: auto;
+  overflow: visible !important;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
   width: 100%;
-  min-height: 200px;
+  height: fit-content !important;
+  min-height: unset;
 }
 
 @media (min-width: 771px) {
