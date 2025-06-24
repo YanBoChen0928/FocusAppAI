@@ -70,13 +70,13 @@ class ReportService {
       const isDeepAnalysis = this._shouldUseDeepAnalysis(daysDifference);
       
       // Log RAG-related information
-      console.log('[RAG] Analysis type:', isDeepAnalysis ? 'Deep Analysis' : 'Basic Analysis');
-      console.log('[RAG] Time range:', { 
+      console.log('[Analysis] Type:', isDeepAnalysis ? 'Deep Analysis' : 'Basic Analysis');
+      console.log('[Analysis] Time range:', { 
         startDate: period.startDate, 
         endDate: period.endDate, 
         daysDifference 
       });
-      console.log('[RAG] Model selected:', isDeepAnalysis ? 'GPT-o4-mini + RAG' : 'GPT-4o-mini');
+      console.log('[Analysis] Model selected:', isDeepAnalysis ? 'GPT-o4-mini + RAG' : 'GPT-4o-mini');
 
       // Get goal information
       const goal = await Goal.findById(goalId);
@@ -269,7 +269,7 @@ Please reply in English, with a positive and encouraging tone, and specific sugg
 
   static async _generateAIAnalysis(prompt, isDeepAnalysis) {
     try {
-      console.time('[RAG] AI Analysis Generation');
+      console.time('[Analysis] Generation');
       const completion = await openai.chat.completions.create({
         model: isDeepAnalysis ? "gpt-o4-mini" : "gpt-4o-mini",
         messages: [
@@ -279,13 +279,13 @@ Please reply in English, with a positive and encouraging tone, and specific sugg
         temperature: 0.7,
         max_tokens: isDeepAnalysis ? 1000 : 500
       });
-      console.timeEnd('[RAG] AI Analysis Generation');
+      console.timeEnd('[Analysis] Generation');
 
       return completion.choices[0].message.content;
     } catch (error) {
-      console.error('[RAG] AI analysis generation failed:', error);
+      console.error('[Analysis] Generation failed:', error);
       if (isDeepAnalysis) {
-        console.warn('[RAG] Falling back to GPT-4o-mini due to API error');
+        console.warn('[Analysis] Falling back to GPT-4o-mini due to API error');
         return this._generateAIAnalysis(prompt, false);
       }
       throw new Error('AI analysis generation failed, please try again later');
