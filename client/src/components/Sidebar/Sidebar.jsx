@@ -169,15 +169,13 @@ export default function Sidebar({
 
   return (
     <Box
+      className={styles.sidebar}
       sx={{
-        width: "300px",
-        height: "100vh",
-        bgcolor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        flexDirection: "column",
-        p: 2,
+        width: '100%',
+        height: 'fit-content',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
         ...sx
       }}
     >

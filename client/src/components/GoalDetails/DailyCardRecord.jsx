@@ -1186,7 +1186,17 @@ export default function DailyCardRecord({
           
           {/* Existing Records */}
           {Array.isArray(cardData.records) && cardData.records.length > 0 ? (
-            <Paper variant="outlined" sx={{ mb: 2, maxHeight: '200px', overflow: 'auto' }}>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 2, 
+                height: 'fit-content',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                backgroundColor: 'transparent'
+              }}
+            >
               <List dense>
                 {cardData.records.map((record, index) => (
                   <ListItem key={index}>
