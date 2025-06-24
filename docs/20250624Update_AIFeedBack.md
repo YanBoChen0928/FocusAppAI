@@ -1,5 +1,17 @@
 # AI Feedback System Optimization Design
 
+## Related Files
+- `server/services/RAGService.js`: Core RAG functionality implementation
+- `server/services/ReportService.js`: Report generation and analysis
+- `client/src/components/ProgressReport/AIFeedback.jsx`: Frontend feedback display
+- `server/models/Report.js`: Data model for reports and embeddings
+- `server/config/ai-service.js`: AI service configuration
+- `server/services/AIService.js`: OpenAI integration service
+
+## Update History
+- 2025/06/24: Updated with enhanced UI components and OpenAI service configuration
+- 2025/06/21: Initial documentation of new RAG strategy
+
 ## Update (2025/06/21)
 New RAG strategy has been documented in `AIFeedBack_RAG.md`, including:
 - Conditional RAG activation based on analysis timeframe
