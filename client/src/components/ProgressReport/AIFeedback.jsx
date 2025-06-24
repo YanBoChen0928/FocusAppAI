@@ -63,7 +63,13 @@ export default function AIFeedback({ goalId }) {
   
   // Handle popover open
   const handlePopoverOpen = (event, title, content) => {
-    setPopoverAnchorEl(event.currentTarget);
+    // Find the vision-section element
+    const visionSection = document.querySelector('.vision-section.MuiBox-root');
+    if (visionSection && window.innerWidth >= 1101) {
+      setPopoverAnchorEl(visionSection);
+    } else {
+      setPopoverAnchorEl(event.currentTarget);
+    }
     setCurrentPopoverTitle(title);
     setCurrentPopoverContent(content);
   };
@@ -458,50 +464,110 @@ export default function AIFeedback({ goalId }) {
         id={popoverId}
         open={isPopoverOpen}
         anchorEl={popoverAnchorEl}
-        onClose={handlePopoverClose}
+        onClose={(event, reason) => {
+          if (reason !== 'backdropClick') {
+            handlePopoverClose();
+          }
+        }}
+        disableRestoreFocus
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
+          vertical: 'top',
+          horizontal: 'left',
         }}
         transformOrigin={{
           vertical: 'top',
-          horizontal: 'center',
+          horizontal: 'left',
         }}
         PaperProps={{
-          elevation: 0, /* Flat look */
+          elevation: 0,
           sx: {
-            width: '90vw',
-            maxWidth: '380px', /* Slightly wider */
-            maxHeight: '60vh',
-            borderRadius: '14px', /* More pronounced radius */
-            boxShadow: '0 8px 25px rgba(0,0,0,0.1)', /* Softer, larger shadow */
+            width: {
+              xs: '90vw',
+              sm: '90vw',
+              md: '380px',
+              lg: '100%'
+            },
+            height: {
+              xs: 'auto',
+              sm: 'auto',
+              md: 'auto',
+              lg: 'calc(1.5rem * 10)'
+            },
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            borderRadius: '14px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
             border: '1px solid rgba(0,0,0,0.05)',
             overflow: 'hidden',
-            mt: '8px' /* Space from anchor */
+            '@media (min-width: 1101px)': {
+              width: '100%',
+              maxWidth: 'none',
+              maxHeight: 'none',
+              zIndex: 1300,
+              position: 'absolute',
+              top: 0,
+              left: 0
+            }
           }
         }}
       >
-        <Card sx={{ boxShadow: 'none', backgroundColor: '#fff' }}>
+        <Card sx={{ 
+          boxShadow: 'none', 
+          backgroundColor: '#fff',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%'
+        }}>
           <CardHeader
             title={currentPopoverTitle}
             action={
-              <IconButton aria-label="close" onClick={handlePopoverClose} size="small" sx={{ color: '#888' }}>
-                <CloseIcon fontSize="inherit" />
+              <IconButton 
+                aria-label="close" 
+                onClick={handlePopoverClose} 
+                size="small" 
+                sx={{ 
+                  color: '#888',
+                  padding: '8px',
+                  backgroundColor: 'rgba(0,0,0,0.05)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0,0,0,0.1)'
+                  }
+                }}
+              >
+                <CloseIcon fontSize="small" />
               </IconButton>
             }
             titleTypographyProps={{
               variant: 'subtitle2',
-              sx: { fontWeight: 600, color: '#1d1d1f' } /* Darker text */
+              sx: { 
+                fontWeight: 600, 
+                color: '#1d1d1f',
+                fontSize: '1.1rem'
+              }
             }}
             sx={{ 
-              py: 1, /* Adjust padding */
+              py: 1,
               px: 2,
-              backgroundColor: '#f8f8f8', /* Lighter header bg */
+              backgroundColor: '#f8f8f8',
               borderBottom: '1px solid #eee',
-              '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 }
+              '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
+              width: '100%'
             }}
           />
-          <CardContent sx={{ pt: 1.5, pb: 2, px: 2 }}>
+          <CardContent sx={{
+            pt: 1.5,
+            pb: 2,
+            px: 2,
+            width: '100%',
+            height: '100%',
+            overflow: 'auto',
+            '@media (min-width: 1101px)': {
+              width: '100%',
+              boxSizing: 'border-box'
+            }
+          }}>
             <Typography
               variant="body2"
               component="div"
@@ -510,20 +576,20 @@ export default function AIFeedback({ goalId }) {
                 lineHeight: 1.6,
                 color: '#333',
                 fontSize: '0.85rem',
+                width: '100%',
                 '& .bold-title': {
                   fontWeight: 600,
                   color: '#1d1d1f',
                   display: 'inline'
                 },
-                // Add paragraph spacing
                 '& p': {
-                  marginBottom: '1rem'
+                  marginBottom: '1rem',
+                  width: '100%'
                 },
-                // Add spacing between sections
                 '& > div': {
-                  marginBottom: '1rem'
+                  marginBottom: '1rem',
+                  width: '100%'
                 },
-                // Add spacing for numbered items
                 '& > div + div': {
                   marginTop: '1rem'
                 }
