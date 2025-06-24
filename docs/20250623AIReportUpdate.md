@@ -14,11 +14,12 @@ This document outlines the behavior of the AI feedback popover in relation to th
 - Click-away behavior is disabled to prevent accidental closing.
 
 ## Layout Behavior
-- The popover is centered in the viewport using transform: translate(-50%, -50%).
+- The popover is positioned relative to the viewport.
 - For screens wider than 1101px:
-  - Width is set to 50% of viewport width
-  - Height is set to 70vh
-  - Fixed position ensures consistent placement
+  - Width is set to 60% of viewport width (60vw)
+  - Height adjusts automatically based on content
+  - Fixed position at 30% from viewport top (30vh)
+  - Horizontally centered using transform: translateX(-50%)
   - Higher z-index (1300) ensures visibility
 
 ## Implementation Details

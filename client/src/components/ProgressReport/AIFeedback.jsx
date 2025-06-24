@@ -485,13 +485,13 @@ export default function AIFeedback({ goalId }) {
               xs: '90vw',
               sm: '90vw',
               md: '380px',
-              lg: '100%'
+              lg: '60vw'
             },
             height: {
               xs: 'auto',
               sm: 'auto',
               md: 'auto',
-              lg: 'calc(1.5rem * 10)'
+              lg: 'auto'
             },
             position: 'absolute',
             top: 0,
@@ -501,13 +501,15 @@ export default function AIFeedback({ goalId }) {
             border: '1px solid rgba(0,0,0,0.05)',
             overflow: 'hidden',
             '@media (min-width: 1101px)': {
-              width: '100%',
+              width: '60vw',
               maxWidth: 'none',
               maxHeight: 'none',
               zIndex: 1300,
-              position: 'absolute',
-              top: 0,
-              left: 0
+              position: 'fixed',
+              top: '30vh',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              height: 'auto'
             }
           }
         }}
