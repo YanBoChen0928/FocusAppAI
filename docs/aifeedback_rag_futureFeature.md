@@ -12,11 +12,11 @@
 
 2. **Generation Models**:
 
-   - Daily Reports: gpt-3.5-turbo
+   - Daily Reports: gpt-4o-mini
      - Fast response (1-2s)
      - Cost-effective
      - Sufficient for basic analysis
-   - Deep Analysis: gpt-4
+   - Deep Analysis: gpt-o4-mini
      - RAG-enhanced context
      - Long-term pattern analysis
      - User-initiated deep dive discussions
