@@ -469,14 +469,22 @@ export default function AIFeedback({ goalId }) {
             handlePopoverClose();
           }
         }}
+        disablePortal={true}
+        disableEnforceFocus
         disableRestoreFocus
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
+        disableScrollLock={true}
+        keepMounted
+        BackdropProps={{
+          style: { pointerEvents: 'none' }
         }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
+        sx={{
+          pointerEvents: 'none',
+          '& .MuiPopover-paper': {
+            pointerEvents: 'auto',
+          },
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'transparent'
+          }
         }}
         PaperProps={{
           elevation: 0,
@@ -487,15 +495,8 @@ export default function AIFeedback({ goalId }) {
               md: '380px',
               lg: '60vw'
             },
-            height: {
-              xs: 'auto',
-              sm: 'auto',
-              md: 'auto',
-              lg: 'auto'
-            },
+            height: 'auto',
             position: 'absolute',
-            top: 0,
-            left: 0,
             borderRadius: '14px',
             boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
             border: '1px solid rgba(0,0,0,0.05)',
@@ -508,8 +509,7 @@ export default function AIFeedback({ goalId }) {
               position: 'fixed',
               top: '30vh',
               left: '50%',
-              transform: 'translateX(-50%)',
-              height: 'auto'
+              transform: 'translateX(-50%)'
             }
           }
         }}
