@@ -1,14 +1,67 @@
 # AI Feedback Data Flow Documentation
 
+Related Files:
+- `server/services/RAGService.js`
+- `server/services/ReportService.js`
+- `client/src/components/ProgressReport/AIFeedback.jsx`
+- `server/models/Report.js`
+- `focus-app/docs/20250624aifeedback_rag_futureFeature.md`
+
 ## Update (2025/06/21)
 Added new RAG strategy implementation. See `AIFeedBack_RAG.md` for detailed documentation about:
 - Time-based RAG activation (21+ days analysis)
-- Model selection strategy (GPT-3.5 vs GPT-4)
+- Model selection strategy (GPT-4o-mini (general) vs GPT-o4-mini(RAG))
 - Cache optimization strategy
 
 ## Overview
 
 The AI feedback system follows a comprehensive data flow pattern that integrates with MongoDB for both input and output operations, enhanced with RAG (Retrieval Augmented Generation) capabilities.
+
+## Model Configuration
+
+### Text Generation Models
+```javascript
+// Basic Analysis
+model: "gpt-4o-mini"
+temperature: 0.7
+max_tokens: 500
+
+// Deep Analysis (RAG)
+model: "gpt-o4-mini"
+temperature: 0.7
+max_tokens: 500
+```
+
+### Embedding Model
+```javascript
+model: "text-embedding-ada-002"
+encoding_format: "float"
+dimensions: 1536
+```
+
+## Vector Store Configuration
+
+### MongoDB Vector Store Implementation
+- **Model**: text-embedding-ada-002
+- **Dimensions**: 1536
+- **Distance Metric**: cosine similarity
+- **Index Type**: vectorSearch
+- **Storage**: MongoDB Atlas
+
+### MongoDB Vector Search Configuration
+```javascript
+// Vector Search Index Configuration
+{
+  name: "reportEmbeddings",
+  type: "vectorSearch",
+  fields: [{
+    numDimensions: 1536,
+    path: "embedding",
+    similarity: "cosine",
+    type: "vector"
+  }]
+}
+```
 
 ## Data Flow Architecture
 
@@ -117,12 +170,12 @@ await vectorStore.upsert({
 ### OpenAI Models Used
 ```javascript
 // For text generation
-model: "gpt-4"
+model: "gpt-4o-mini"
 temperature: 0.7
 max_tokens: 500
 
 // For embeddings
-model: "text-embedding-3-small"
+model: ""
 encoding_format: "float"
 ```
 
@@ -264,17 +317,103 @@ Response should include:
 }
 ```
 
-## Vector Store Configuration
+## User Interaction and RAG Implementation (Update 2025/06/24)
 
-### Embedding Model
-- Model: text-embedding-3-small
-- Dimensions: 1536
-- Distance Metric: cosine similarity
+### UI Components
+```javascript
+// client/src/components/ProgressReport/AIFeedback.jsx
+const AIFeedbackDetail = ({ feedback }) => {
+  const [userEditedText, setUserEditedText] = useState(feedback.content);
+  const [isRAGDialogOpen, setIsRAGDialogOpen] = useState(false);
+  
+  return (
+    <div className="feedback-section">
+      {/* Inline Editing */}
+      <div className="edit-section">
+        <button className="edit-button">
+          <span>✏️ Edit</span>
+        </button>
+        <textarea
+          value={userEditedText}
+          onChange={(e) => setUserEditedText(e.target.value)}
+          onBlur={handleInlineEdit}
+        />
+      </div>
 
-### Storage Options
-1. Pinecone
-2. Milvus
-3. Qdrant
+      {/* RAG Dialog Trigger */}
+      <button 
+        className="rag-button"
+        onClick={() => setIsRAGDialogOpen(true)}
+      >
+        <span>💬 Refine with AI</span>
+      </button>
+
+      {/* RAG Dialog */}
+      <Dialog open={isRAGDialogOpen}>
+        <RAGDialogContent feedback={feedback} />
+      </Dialog>
+    </div>
+  );
+};
+```
+
+### RAG Interaction Flow
+```javascript
+const RAGDialogContent = ({ feedback }) => {
+  const handleRAGQuery = async (query) => {
+    // Only generate embeddings during RAG interaction
+    const response = await api.post('/api/feedback/rag-query', {
+      feedbackId: feedback.id,
+      query,
+      userRequestedRAG: true  // Explicit RAG request
+    });
+    return response.data;
+  };
+};
+```
+
+### Embedding Generation Strategy
+```javascript
+// server/services/RAGService.js
+class RAGService {
+  static async handleUserInteraction(feedbackId, type, content) {
+    switch (type) {
+      case 'inline-edit':
+        // No embedding generation for inline edits
+        await this.saveUserEdit(feedbackId, content);
+        break;
+      
+      case 'rag-query':
+        // Generate embeddings only for RAG interactions
+        const embedding = await this.generateEmbedding(content);
+        const enhancedPrompt = await this.enhancePromptWithContext(
+          content,
+          embedding
+        );
+        return this.generateRAGResponse(enhancedPrompt);
+    }
+  }
+}
+```
+
+### Data Storage Schema
+```javascript
+// Extended Report Schema
+{
+  // ... existing fields ...
+  userEdits: [{
+    content: String,
+    timestamp: Date,
+    type: String // 'inline' or 'rag'
+  }],
+  ragInteractions: [{
+    query: String,
+    response: String,
+    timestamp: Date,
+    embedding: Array // Only stored for RAG queries
+  }]
+}
+```
 
 ## RAG Implementation Details
 
@@ -447,7 +586,7 @@ Please provide a detailed response that:
 `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: isDeepAnalysis ? "gpt-o4-mini" : "gpt-4o-mini",  // Updated model selection
       messages: [
         { role: "system", content: "You are a goal-oriented AI assistant." },
         { role: "user", content: prompt }
@@ -516,7 +655,7 @@ class AIService {
   static async generateAnalysis(prompt) {
     try {
       const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: isDeepAnalysis ? "gpt-o4-mini" : "gpt-4o-mini",  // Updated model selection
         messages: [
           { role: "system", content: "You are a goal-oriented AI assistant." },
           { role: "user", content: prompt }
@@ -534,7 +673,7 @@ class AIService {
 
   static async generateEmbedding(text) {
     const response = await openai.embeddings.create({
-      model: "text-embedding-3-small",
+      model: "text-embedding-ada-002",  // Updated embedding model
       input: text,
       encoding_format: "float"
     });

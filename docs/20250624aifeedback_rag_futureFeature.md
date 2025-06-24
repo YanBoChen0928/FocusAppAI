@@ -161,7 +161,7 @@ class ReportService {
      - Floating icon appears next to each section.
      - When clicked, opens a dialog window for context-aware discussion with the AI.
      - Uses embedding + vector search to retrieve related past feedback or goals.
-     - Returns improved or rephrased suggestions powered by GPT-4.
+     - Returns improved or rephrased suggestions powered by GPT-o4-mini. (RAG)
 
    - **UX Recommendation**:
 
