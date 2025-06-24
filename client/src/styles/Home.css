@@ -135,7 +135,7 @@
   box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
-  overflow: visible;
+  overflow: visible !important;
   height: fit-content;
 }
 
@@ -148,7 +148,7 @@
   margin-bottom: 16px;
   padding: 1rem;
   overflow: visible !important;
-  background-color: #ffffff !important; /* Force white background with !important */
+  background-color: #ffffff !important;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
@@ -171,6 +171,22 @@
   order: 3; /* Show ProgressReport third */
 }
 
+/* Override MUI Box styles to prevent unwanted scrollbars */
+:global(.MuiBox-root[class*="css-"]) {
+  overflow: visible !important;
+  height: fit-content !important;
+  min-height: unset !important;
+}
+
+/* Ensure ProgressReport container follows the same rules */
+:global(.MuiBox-root[class*="reportContainer"]) {
+  overflow: visible !important;
+  height: fit-content !important;
+  min-height: unset !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 /* Tablet layout (771px - 1100px) - Two Columns */
 /* Changed breakpoint from 600px and added max-width */
 @media (min-width: 771px) and (max-width: 1100px) {
@@ -181,9 +197,10 @@
 
   .main-content {
     flex-direction: row;
-    flex-wrap: wrap; /* Allows ProgressReport to wrap below */
+    flex-wrap: wrap;
     padding: 16px;
     gap: 20px;
+    overflow: visible !important;
   }
 
   /* Sidebar */
@@ -192,6 +209,7 @@
     width: 30%;
     flex: 0 0 30%;
     order: unset;
+    overflow: visible !important;
   }
 
   /* GoalDetails */
@@ -199,15 +217,16 @@
     width: 65%;
     flex: 0 0 65%;
     order: unset;
+    overflow: visible !important;
   }
 
-  /* ProgressReport - wraps below */
+  /* ProgressReport */
   .main-content > :nth-child(3) {
-    display: block !important;
-    width: 65%; /* Match GoalDetails width */
+    width: 65%;
+    margin-left: calc(30% + 20px);
     flex: 0 0 65%;
-    margin-left: auto; /* Align under GoalDetails */
-    order: 3; /* Ensure it's after the first two */
+    order: unset;
+    overflow: visible !important;
   }
 }
 
