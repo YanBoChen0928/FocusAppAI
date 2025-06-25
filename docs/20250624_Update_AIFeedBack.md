@@ -743,6 +743,36 @@ class AIService {
    - Maintains current drag functionality
    - Compatible with existing event handlers
 
+### 4. Implementation Notes
+
+1. **Position Reset**:
+   - Reset to default position when closed
+   - Start from default position when reopened
+   - Use defaultPosition state to store initial position
+
+2. **Bounds Handling**:
+   - Restrict drag range within window
+   - Calculate maximum draggable area
+   - Prevent Popover from being dragged outside window
+
+3. **Style Considerations**:
+   - Use fixed positioning to ensure correct layer hierarchy
+   - Set appropriate z-index
+   - Maintain original Popover styling
+
+4. **Accessibility**:
+   - Maintain modality="none" setting
+   - Ensure keyboard operation availability
+   - Preserve screen reader support
+
+### 5. Testing Checklist
+- [ ] Drag functionality works properly
+- [ ] Position constrained within window bounds
+- [ ] Position resets after closing
+- [ ] Position correct when reopening
+- [ ] Accessibility fully maintained
+- [ ] No interference with other functions
+
 ## IX. Draggable Popover Implementation
 
 ### 1. Dependencies Required
@@ -838,29 +868,29 @@ const handlePopoverClose = () => {
 ### 4. Implementation Notes
 
 1. **Position Reset**:
-   - 關閉時重置到默認位置
-   - 重新打開時從默認位置開始
-   - 使用 defaultPosition state 保存初始位置
+   - Reset to default position when closed
+   - Start from default position when reopened
+   - Use defaultPosition state to store initial position
 
 2. **Bounds Handling**:
-   - 限制拖拽範圍在視窗內
-   - 計算最大可拖拽範圍
-   - 防止 Popover 被拖出視窗
+   - Restrict drag range within window
+   - Calculate maximum draggable area
+   - Prevent Popover from being dragged outside window
 
 3. **Style Considerations**:
-   - 使用 fixed 定位確保正確的層級關係
-   - 設置適當的 z-index
-   - 保持原有的 Popover 樣式
+   - Use fixed positioning to ensure correct layer hierarchy
+   - Set appropriate z-index
+   - Maintain original Popover styling
 
 4. **Accessibility**:
-   - 保持 modality="none" 設置
-   - 確保鍵盤操作可用
-   - 維持螢幕閱讀器支持
+   - Maintain modality="none" setting
+   - Ensure keyboard operation availability
+   - Preserve screen reader support
 
 ### 5. Testing Checklist
-- [ ] 拖拽功能正常工作
-- [ ] 位置限制在視窗範圍內
-- [ ] 關閉後重置位置
-- [ ] 重新打開時位置正確
-- [ ] 可訪問性保持完整
-- [ ] 不影響其他功能
+- [x] Drag functionality works properly
+- [x] Position constrained within window bounds
+- [x] Position resets after closing
+- [x] Position correct when reopening
+- [x] Accessibility fully maintained
+- [x] No interference with other functions

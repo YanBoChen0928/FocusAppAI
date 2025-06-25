@@ -11,13 +11,12 @@
 
 
 **English (translated question):**
-I’m using a MERN stack with Vite, MongoDB, and MUI’s Popover component, and I want to make that Popover draggable and droppable with dnd-kit. I previously got dragging to work, but on drop it snaps back to its original spot (we’re using relative positioning). After some changes, now it can’t even be dragged. What steps would I need to take to implement this functionality correctly?
+I'm using a MERN stack with Vite, MongoDB, and MUI's Popover component, and I want to make that Popover draggable and droppable with dnd-kit. I previously got dragging to work, but on drop it snaps back to its original spot (we're using relative positioning). After some changes, now it can't even be dragged. What steps would I need to take to implement this functionality correctly?
 
 ---
 
 **中文回答：**
-要在 MUI Popover 上實現可拖放，並在放下後保留新的位置，大致可以按以下步驟操作：
-
+要在 MUI Popover 上實現可拖放，並在放下後保留新的位置，大致可以按以下步驟操作：(solved)
 1. **維護位置 State**
 
    * 在組件中用 `useState` 建立一個位置狀態，形如 `{ x: number, y: number }`，預設為彈窗初始座標。
@@ -117,3 +116,117 @@ I’m using a MERN stack with Vite, MongoDB, and MUI’s Popover component, and 
 ---
 
 (以上是dnd bug)
+
+# 3. Time Range Select 日期計算問題分析
+
+## 問題描述
+
+在 AIFeedback 組件中，發現日期範圍計算的行為在不同選擇模式下不一致：
+
+1. **預設範圍選擇（7天/30天）**
+   - 在 `handleTimeRangeChange` 中直接計算並輸出日期範圍
+   - 立即更新 state 並記錄日誌
+   - 完整的日期計算流程可見
+
+2. **自定義日期範圍**
+   - 在 `handleConfirmCustomDate` 中只設置日期範圍
+   - 缺少日期計算的日誌輸出
+   - 直到 `generateFeedback` 才進行實際計算
+
+## 影響範圍
+
+1. **RAG 服務判斷**
+   - RAG 服務需要根據日期範圍（>= 21天）決定是否啟動深度分析
+   - 當前自定義日期的計算延遲可能影響這個判斷的即時性
+
+2. **調試與監控**
+   - 缺少自定義日期範圍的即時計算日誌
+   - 難以在選擇階段就確認日期計算是否正確
+   - 可能影響問題排查效率
+
+## 技術細節
+
+相關代碼位置：
+
+1. **日期範圍計算**
+```javascript
+// 預設範圍（7天/30天）的計算
+if (value === 'last7days') {
+  const { start, end } = getLastNDaysRange(7);
+  setStartDate(start);
+  setEndDate(end);
+}
+
+// 自定義範圍的設置
+const handleConfirmCustomDate = () => {
+  if (isValidDateRange(startDate, endDate)) {
+    const start = startOfDay(startDate);
+    const end = endOfDay(endDate);
+    setCustomDateRange({
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      displayStart: start,
+      displayEnd: end
+    });
+  }
+};
+```
+
+2. **RAG 服務判斷**
+```javascript
+static _shouldUseDeepAnalysis(daysDifference) {
+  const shouldUseRAG = daysDifference >= 21;
+  console.log('[RAG] Should use deep analysis:', shouldUseRAG);
+  return shouldUseRAG;
+}
+```
+
+## 建議方向
+
+需要在自定義日期確認時增加與預設範圍選擇相同的日期計算和日誌輸出邏輯，以保持行為一致性並提供更好的調試信息。
+
+---
+
+const handleConfirmCustomDate = () => {
+  if (isValidDateRange(startDate, endDate)) {
+    // 1. 首先确保日期格式正确
+    const start = startOfDay(startDate);
+    const end = endOfDay(endDate);
+    
+    // 2. 计算日期范围（与预设范围选择保持一致的计算方式）
+    const dateRange = getDateRangeForAnalysis('custom', {
+      startDate: start.toISOString(),
+      endDate: end.toISOString()
+    });
+
+    // 3. 添加与预设范围相同的日志输出
+    console.log('Date range calculated:', {
+      start: formatDisplayDate(dateRange.displayStart),
+      end: formatDisplayDate(dateRange.displayEnd),
+      startUTC: dateRange.startDate,
+      endUTC: dateRange.endDate,
+      timeZone: userTimeZone
+    });
+
+    // 4. 计算天数差异（为 RAG 服务提供判断依据）
+    const daysDifference = Math.ceil(
+      (end - start) / (1000 * 60 * 60 * 24)
+    );
+    console.log('[Analysis] Time range:', { 
+      startDate: start, 
+      endDate: end, 
+      daysDifference 
+    });
+    
+    // 5. 更新状态
+    setCustomDateRange({
+      startDate: dateRange.startDate,    // UTC for server
+      endDate: dateRange.endDate,        // UTC for server
+      displayStart: dateRange.displayStart, // Local for display
+      displayEnd: dateRange.displayEnd     // Local for display
+    });
+    
+    setCustomDateOpen(false);
+    setTimeRange('custom');
+  }
+};
