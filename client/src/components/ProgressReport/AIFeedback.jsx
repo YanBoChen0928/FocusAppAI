@@ -149,6 +149,22 @@ export default function AIFeedback({ goalId }) {
   // Handle time range change
   const handleTimeRangeChange = (event) => {
     const value = event.target.value;
+    
+    // Reset custom date range and date picker values if clicking custom option while it's already set
+    if (value === 'custom' && customDateRange.displayStart && customDateRange.displayEnd) {
+      // Reset customDateRange
+      setCustomDateRange({
+        start: null,
+        end: null,
+        displayStart: null,
+        displayEnd: null
+      });
+      // Reset date picker values to current defaults
+      const { start: defaultStart, end: defaultEnd } = getLastNDaysRange(7);
+      setStartDate(defaultStart);
+      setEndDate(defaultEnd);
+    }
+    
     setTimeRange(value);
     
     if (value === 'last7days') {
