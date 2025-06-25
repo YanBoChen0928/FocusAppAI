@@ -94,9 +94,16 @@ export default function AIFeedback({ goalId }) {
   // Add time range selection state
   const [timeRange, setTimeRange] = useState('last7days');
   const [customDateOpen, setCustomDateOpen] = useState(false);
+  const [customDateRange, setCustomDateRange] = useState({
+    start: null,
+    end: null,
+    displayStart: null,
+    displayEnd: null
+  });
   const { start: initialStart, end: initialEnd } = getLastNDaysRange(7);
   const [startDate, setStartDate] = useState(initialStart);
   const [endDate, setEndDate] = useState(initialEnd);
+  const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   // Popover state
   const [popoverAnchorEl, setPopoverAnchorEl] = useState(null);
@@ -147,10 +154,22 @@ export default function AIFeedback({ goalId }) {
       const { start, end } = getLastNDaysRange(7);
       setStartDate(start);
       setEndDate(end);
+      setCustomDateRange({
+        start: null,
+        end: null,
+        displayStart: null,
+        displayEnd: null
+      });
     } else if (value === 'last30days') {
       const { start, end } = getLastNDaysRange(30);
       setStartDate(start);
       setEndDate(end);
+      setCustomDateRange({
+        start: null,
+        end: null,
+        displayStart: null,
+        displayEnd: null
+      });
     } else if (value === 'custom') {
       setCustomDateOpen(true);
     }
@@ -159,13 +178,20 @@ export default function AIFeedback({ goalId }) {
   // Close custom date dialog
   const handleCloseCustomDate = () => {
     setCustomDateOpen(false);
-    // If the user cancels without selecting dates, revert to last selection
-    setTimeRange(timeRange === 'custom' ? 'last7days' : timeRange);
+    if (!customDateRange.start && !customDateRange.end) {
+      // If no custom range was set, revert to previous selection
+      setTimeRange(timeRange === 'custom' ? 'last7days' : timeRange);
+    }
   };
 
   // Confirm custom date range
   const handleConfirmCustomDate = () => {
     if (isValidDateRange(startDate, endDate)) {
+      const dateRange = getDateRangeForAnalysis('custom', {
+        start: startDate,
+        end: endDate
+      });
+      setCustomDateRange(dateRange);
       setCustomDateOpen(false);
       setTimeRange('custom');
     }
@@ -180,20 +206,26 @@ export default function AIFeedback({ goalId }) {
     setLoading(true);
     setError(null);
     try {
-          console.log('Starting to request report generation, goalId:', goalId);
+      console.log('Starting to request report generation, goalId:', goalId);
     
-    // Get date range using the utility function
-    const dateRange = getDateRangeForAnalysis(timeRange);
-    
-    console.log('Date range calculated:', {
-      start: formatDisplayDate(dateRange.displayStart),
-      end: formatDisplayDate(dateRange.displayEnd),
-      startUTC: dateRange.startDate,
-      endUTC: dateRange.endDate
-    });
+      // Get date range using the utility function with custom range
+      const dateRange = getDateRangeForAnalysis(timeRange, customDateRange);
+      
+      console.log('Date range calculated:', {
+        start: formatDisplayDate(dateRange.displayStart),
+        end: formatDisplayDate(dateRange.displayEnd),
+        startUTC: dateRange.startDate,
+        endUTC: dateRange.endDate,
+        timeZone: userTimeZone
+      });
 
-    // Send request with correct date range format
-    const response = await apiService.reports.generate(goalId, dateRange.startDate, dateRange.endDate);
+      // Send request with correct date range format
+      const response = await apiService.reports.generate(
+        goalId, 
+        dateRange.startDate, 
+        dateRange.endDate,
+        userTimeZone
+      );
       console.log('Received report response:', response);
       
       if (response.data && response.data.success) {
@@ -276,11 +308,10 @@ export default function AIFeedback({ goalId }) {
 
   // Date range display
   const renderDateRange = () => {
-    if (timeRange === 'custom' && customDateRange) {
-      return getDateRangeString(customDateRange.startDate, customDateRange.endDate);
+    if (timeRange === 'custom' && customDateRange.displayStart && customDateRange.displayEnd) {
+      return getDateRangeString(customDateRange.displayStart, customDateRange.displayEnd);
     }
-
-    const dateRange = getDateRangeForAnalysis(timeRange);
+    const dateRange = getDateRangeForAnalysis(timeRange, customDateRange);
     return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
   };
 
@@ -471,16 +502,22 @@ export default function AIFeedback({ goalId }) {
           <DialogTitle>Select Date Range</DialogTitle>
           <DialogContent>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <Box className="ai-feedback-date-picker-container">
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 2,
+                mt: 2
+              }}>
                 <DatePicker
                   label="Start Date"
                   value={startDate}
                   onChange={(newValue) => setStartDate(newValue)}
-                  slotProps={{ 
-                    textField: { 
+                  format="MM/dd/yyyy"
+                  slotProps={{
+                    textField: {
                       fullWidth: true,
-                      margin: "normal"
-                    } 
+                      helperText: `Timezone: ${userTimeZone}`
+                    }
                   }}
                   maxDate={endDate}
                 />
@@ -488,11 +525,12 @@ export default function AIFeedback({ goalId }) {
                   label="End Date"
                   value={endDate}
                   onChange={(newValue) => setEndDate(newValue)}
-                  slotProps={{ 
-                    textField: { 
+                  format="MM/dd/yyyy"
+                  slotProps={{
+                    textField: {
                       fullWidth: true,
-                      margin: "normal"
-                    } 
+                      helperText: `Timezone: ${userTimeZone}`
+                    }
                   }}
                   minDate={startDate}
                   maxDate={new Date()}
@@ -502,7 +540,13 @@ export default function AIFeedback({ goalId }) {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseCustomDate}>Cancel</Button>
-            <Button onClick={handleConfirmCustomDate} variant="contained">Confirm</Button>
+            <Button 
+              onClick={handleConfirmCustomDate} 
+              variant="contained"
+              disabled={!isValidDateRange(startDate, endDate)}
+            >
+              Confirm
+            </Button>
           </DialogActions>
         </Dialog>
 
