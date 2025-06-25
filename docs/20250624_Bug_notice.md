@@ -1,3 +1,5 @@
+# 1. AI report: Actionable Suggestions (incomplete)
+
 這裡的截斷並不是因為你選用的 4o-mini 模型的上下文窗口，而是 Actionable Suggestions 那個側邊欄本身對「建議文字長度」做了限制，超過某個字數就自動截掉了。
 
 如果你是透過 API 自己產生這段建議：可以在呼叫時調整 max_tokens 參數，把允許的最大回覆長度調大。
@@ -9,11 +11,80 @@
 ---
 (the AI report)
 
+## AI Report: Actionable Suggestions 截断问题分析
+
+### 问题描述
+1. AI建议内容在前端显示时被截断
+2. 无法查看完整的建议内容
+3. 用户体验受到影响
+
+### 问题根源分析
+1. **后端Token限制**
+   - ReportService.js中的token限制过低：
+     - 基础分析：500 tokens
+     - 深度分析：1000 tokens
+   - 导致生成的内容可能被截断
+
+2. **前端显示限制**
+   - AIFeedback组件缺乏内容展开机制
+   - 建议内容显示区域固定高度限制
+   - 缺少滚动条支持
+
+3. **内容格式化问题**
+   - reportsController.js中的formatAIResponse函数对内容进行了强制截断
+   - summary字段限制在200字符
+   - 分段逻辑可能导致内容丢失
+
+### 建议解决方案
+
+1. **增加Token限制**
+```javascript
+// ReportService.js
+static async _generateAIAnalysis(prompt, isDeepAnalysis) {
+  const completion = await openai.chat.completions.create({
+    model: isDeepAnalysis ? "gpt-o4-mini" : "gpt-4o-mini",
+    messages: [
+      { role: "system", content: "You are a goal-oriented AI assistant." },
+      { role: "user", content: prompt }
+    ],
+    temperature: 0.7,
+    max_tokens: isDeepAnalysis ? 2000 : 1000  // 增加token限制
+  });
+}
+```
+
+2. **优化前端显示**
+   - 实现展开/收起机制
+   - 添加滚动条支持
+   - 保留完整内容显示
+   - 改进UI交互体验
+
+3. **改进格式化处理**
+   - 移除不必要的内容截断
+   - 优化分段显示
+   - 保持原始格式
+   - 增加格式化选项
+
+### 实施步骤
+1. 修改ReportService.js中的token限制
+2. 更新AIFeedback组件的显示逻辑
+3. 优化reportsController.js中的格式化函数
+4. 添加前端展开/收起功能
+5. 测试并验证改进效果
+
+### 预期效果
+1. 完整显示AI建议内容
+2. 提供更好的用户阅读体验
+3. 保持内容的格式和结构
+4. 改善整体交互体验
+
+# 2. Dnd Bug (solved)
 
 **English (translated question):**
 I'm using a MERN stack with Vite, MongoDB, and MUI's Popover component, and I want to make that Popover draggable and droppable with dnd-kit. I previously got dragging to work, but on drop it snaps back to its original spot (we're using relative positioning). After some changes, now it can't even be dragged. What steps would I need to take to implement this functionality correctly?
 
 ---
+
 
 **中文回答：**
 要在 MUI Popover 上實現可拖放，並在放下後保留新的位置，大致可以按以下步驟操作：(solved)
