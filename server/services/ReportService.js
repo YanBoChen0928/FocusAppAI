@@ -277,7 +277,7 @@ Please reply in English, with a positive and encouraging tone, and specific sugg
           { role: "user", content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: isDeepAnalysis ? 1000 : 500
+        max_tokens: isDeepAnalysis ? 2000 : 1000
       });
       console.timeEnd('[Analysis] Generation');
 
