@@ -742,3 +742,125 @@ class AIService {
    - Does not require changes to close button logic
    - Maintains current drag functionality
    - Compatible with existing event handlers
+
+## IX. Draggable Popover Implementation
+
+### 1. Dependencies Required
+```bash
+npm install @dnd-kit/core
+```
+
+### 2. Component Structure
+```jsx
+import { DndContext, useDraggable, useSensor, PointerSensor } from '@dnd-kit/core';
+
+// Position state management
+const [position, setPosition] = useState({ x: 100, y: 100 });
+const [defaultPosition] = useState({ x: 100, y: 100 });
+
+// Draggable wrapper component
+function DraggablePopover({ children, onClose }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: 'feedback-popover'
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    position: 'fixed',
+    zIndex: 9999,
+    touchAction: 'none'
+  } : {
+    position: 'fixed',
+    zIndex: 9999,
+    touchAction: 'none'
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {children}
+    </div>
+  );
+}
+
+// Main component implementation
+<DndContext
+  sensors={[useSensor(PointerSensor)]}
+  onDragEnd={handleDragEnd}
+>
+  <DraggablePopover>
+    <Popover
+      open={isPopoverOpen}
+      anchorEl={popoverAnchorEl}
+      onClose={handlePopoverClose}
+      modality="none"
+      disablePortal
+      container={parentRef.current}
+      anchorReference="anchorPosition"
+      anchorPosition={{ top: position.y, left: position.x }}
+      sx={{
+        '& .MuiPopover-paper': {
+          position: 'static',
+          transform: 'none !important'
+        }
+      }}
+    >
+      {/* Existing Popover content */}
+    </Popover>
+  </DraggablePopover>
+</DndContext>
+```
+
+### 3. Position Management
+```jsx
+// Handle drag end and position update
+const handleDragEnd = (event) => {
+  const { x, y } = position;
+  const newX = x + event.delta.x;
+  const newY = y + event.delta.y;
+  
+  // Ensure position stays within window bounds
+  const maxX = window.innerWidth - 400; // 400 is approximate popover width
+  const maxY = window.innerHeight - 300; // 300 is approximate popover height
+  
+  setPosition({
+    x: Math.min(Math.max(0, newX), maxX),
+    y: Math.min(Math.max(0, newY), maxY)
+  });
+};
+
+// Reset position on close
+const handlePopoverClose = () => {
+  setPosition(defaultPosition);
+  onClose?.();
+};
+```
+
+### 4. Implementation Notes
+
+1. **Position Reset**:
+   - 關閉時重置到默認位置
+   - 重新打開時從默認位置開始
+   - 使用 defaultPosition state 保存初始位置
+
+2. **Bounds Handling**:
+   - 限制拖拽範圍在視窗內
+   - 計算最大可拖拽範圍
+   - 防止 Popover 被拖出視窗
+
+3. **Style Considerations**:
+   - 使用 fixed 定位確保正確的層級關係
+   - 設置適當的 z-index
+   - 保持原有的 Popover 樣式
+
+4. **Accessibility**:
+   - 保持 modality="none" 設置
+   - 確保鍵盤操作可用
+   - 維持螢幕閱讀器支持
+
+### 5. Testing Checklist
+- [ ] 拖拽功能正常工作
+- [ ] 位置限制在視窗範圍內
+- [ ] 關閉後重置位置
+- [ ] 重新打開時位置正確
+- [ ] 可訪問性保持完整
+- [ ] 不影響其他功能
