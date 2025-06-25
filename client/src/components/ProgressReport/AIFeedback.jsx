@@ -41,31 +41,42 @@ import {
 import '../../styles/AIFeedback.css';
 import {
   DndContext,
-  useDraggable
+  useDraggable,
+  useDroppable,
+  pointerWithin,
+  useSensor,
+  useSensors,
+  PointerSensor
 } from '@dnd-kit/core';
 import { startOfDay, endOfDay } from 'date-fns';
 
 // Last modified: 2025-06-21
 // Changes: Added paragraph spacing using MUI styling system
 
-// Draggable wrapper component that maintains original positioning behavior
-function DraggablePopover({ children }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: 'feedback-popover',
-    onDragStart: () => setIsDragging(true),
-    onDragEnd: () => {
-      setIsDragging(false);
-      if (transform) {
-        setDragPosition(prev => ({
-          x: prev.x + transform.x,
-          y: prev.y + transform.y
-        }));
-      }
+// DroppableArea component for handling the droppable region
+function DroppableArea({ children }) {
+  const { setNodeRef } = useDroppable({
+    id: 'droppable-area',
+    data: {
+      accepts: ['feedback-popover']
     }
   });
 
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  return (
+    <div ref={setNodeRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {children}
+    </div>
+  );
+}
+
+// Draggable wrapper component that maintains original positioning behavior
+function DraggablePopover({ children, isDragging, setIsDragging, dragPosition, setDragPosition }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: 'feedback-popover',
+    data: {
+      type: 'popover'
+    }
+  });
 
   const style = {
     position: 'fixed',
@@ -75,14 +86,16 @@ function DraggablePopover({ children }) {
       `translate(-50%, -50%) translate(${dragPosition.x + transform.x}px, ${dragPosition.y + transform.y}px)` :
       `translate(-50%, -50%) translate(${dragPosition.x}px, ${dragPosition.y}px)`,
     zIndex: 1300,
-    touchAction: 'none'
+    touchAction: 'none',
+    cursor: isDragging ? 'grabbing' : 'grab'
   };
 
   return children?.({
     ref: setNodeRef,
     style,
     dragAttributes: attributes ?? {},
-    dragListeners: listeners ?? {}
+    dragListeners: listeners ?? {},
+    isDragging
   });
 }
 
@@ -92,6 +105,19 @@ export default function AIFeedback({ goalId }) {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   
+  // Add drag states at component level
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+
+  // Add sensors configuration
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 0,
+      },
+    })
+  );
+
   // Add time range selection state
   const [timeRange, setTimeRange] = useState('last7days');
   const [customDateOpen, setCustomDateOpen] = useState(false);
@@ -414,7 +440,10 @@ export default function AIFeedback({ goalId }) {
 
   return (
     <DndContext
+      sensors={sensors}
+      onDragStart={() => setIsDragging(true)}
       onDragEnd={(event) => {
+        setIsDragging(false);
         if (event.delta) {
           setDragPosition(prev => ({
             x: prev.x + event.delta.x,
@@ -423,415 +452,423 @@ export default function AIFeedback({ goalId }) {
         }
       }}
     >
-      <Paper 
-        elevation={2} /* Changed from 8 to 2 */
-        className="ai-feedback-paper"
-        sx={{ 
-          borderRadius: '12px', /* Slightly smaller radius */
-          overflow: 'hidden',
-          boxShadow: 'none', /* Remove default shadow */
-          border: '1px solid #e5e5e5', /* Subtle border like Apple cards */
-          mb: 2,
-          backgroundColor: '#fdfdfd' /* Off-white background */
-        }}
-      >
-        <Box 
-          className="ai-feedback-header"
-          sx={{
-            px: 2,
-            pt: 2,
-            pb: 0, /* Remove bottom padding here */
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center' /* Center items */
+      <DroppableArea>
+        <Paper 
+          elevation={2}
+          className="ai-feedback-paper"
+          sx={{ 
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: 'none',
+            border: '1px solid #e5e5e5',
+            mb: 2,
+            backgroundColor: '#fdfdfd'
           }}
         >
-          {/* Line 1: Title */}
-          <Typography 
-            variant="subtitle1" 
-            className="ai-feedback-title"
+          <Box 
+            className="ai-feedback-header"
             sx={{
-              fontWeight: 500,
-              fontSize: '1rem',
-              mb: 1, /* Reduced margin bottom */
-              textAlign: 'center',
-              color: '#333'
+              px: 2,
+              pt: 2,
+              pb: 0, /* Remove bottom padding here */
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center' /* Center items */
             }}
           >
-            AI Progress Analysis
-          </Typography>
-          
-          {/* Line 2: Date Range Selector */}
-          <FormControl 
-            fullWidth 
-            variant="outlined" 
-            size="small" 
-            sx={{ mb: 1, maxWidth: customDateRange.displayStart && customDateRange.displayEnd ? 'auto' : '250px' }}
-          >
-            <InputLabel id="time-range-label">Time Range</InputLabel>
-            <Select
-              labelId="time-range-label"
-              id="time-range-select"
-              value={timeRange}
-              onChange={handleTimeRangeChange}
-              label="Time Range"
+            {/* Line 1: Title */}
+            <Typography 
+              variant="subtitle1" 
+              className="ai-feedback-title"
               sx={{
-                borderRadius: '8px',
-                backgroundColor: '#ffffff',
-                minWidth: '200px',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#ddd'
+                fontWeight: 500,
+                fontSize: '1rem',
+                mb: 1, /* Reduced margin bottom */
+                textAlign: 'center',
+                color: '#333'
+              }}
+            >
+              AI Progress Analysis
+            </Typography>
+            
+            {/* Line 2: Date Range Selector */}
+            <FormControl 
+              fullWidth 
+              variant="outlined" 
+              size="small" 
+              sx={{ mb: 1, maxWidth: customDateRange.displayStart && customDateRange.displayEnd ? 'auto' : '250px' }}
+            >
+              <InputLabel id="time-range-label">Time Range</InputLabel>
+              <Select
+                labelId="time-range-label"
+                id="time-range-select"
+                value={timeRange}
+                onChange={handleTimeRangeChange}
+                label="Time Range"
+                sx={{
+                  borderRadius: '8px',
+                  backgroundColor: '#ffffff',
+                  minWidth: '200px',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#ddd'
+                  }
+                }}
+              >
+                <MenuItem value="last7days">Last 7 Days</MenuItem>
+                <MenuItem value="last30days">Last 30 Days</MenuItem>
+                <MenuItem 
+                  value="custom"
+                  onClick={() => {
+                    // Directly open date picker when clicking this MenuItem
+                    setCustomDateOpen(true);
+                  }}
+                >
+                  {(timeRange === 'custom' && customDateRange.displayStart && customDateRange.displayEnd) 
+                    ? `${formatDisplayDate(customDateRange.displayStart)} - ${formatDisplayDate(customDateRange.displayEnd)}`
+                    : 'Custom Range'}
+                </MenuItem>
+              </Select>
+            </FormControl>
+            
+            {/* Line 3: Generate Button */}
+            <Button 
+              variant="contained" 
+              onClick={generateFeedback}
+              disabled={loading || !goalId}
+              className="ai-feedback-generate-btn"
+              sx={{
+                borderRadius: '8px', /* Slightly smaller radius */
+                padding: '6px 16px', /* Adjust padding */
+                minWidth: 'auto', /* Allow natural width */
+                bgcolor: '#0D5E6D', /* Use accent color */
+                textTransform: 'none', /* No uppercase */
+                fontWeight: 500,
+                mb: 1, /* Keep margin bottom */
+                boxShadow: 'none', /* Remove shadow */
+                '&:hover': {
+                  bgcolor: '#0A4A57' /* Slightly darker hover for the new color */
                 }
               }}
             >
-              <MenuItem value="last7days">Last 7 Days</MenuItem>
-              <MenuItem value="last30days">Last 30 Days</MenuItem>
-              <MenuItem 
-                value="custom"
-                onClick={() => {
-                  // Directly open date picker when clicking this MenuItem
-                  setCustomDateOpen(true);
-                }}
-              >
-                {(timeRange === 'custom' && customDateRange.displayStart && customDateRange.displayEnd) 
-                  ? `${formatDisplayDate(customDateRange.displayStart)} - ${formatDisplayDate(customDateRange.displayEnd)}`
-                  : 'Custom Range'}
-              </MenuItem>
-            </Select>
-          </FormControl>
-          
-          {/* Line 3: Generate Button */}
-          <Button 
-            variant="contained" 
-            onClick={generateFeedback}
-            disabled={loading || !goalId}
-            className="ai-feedback-generate-btn"
-            sx={{
-              borderRadius: '8px', /* Slightly smaller radius */
-              padding: '6px 16px', /* Adjust padding */
-              minWidth: 'auto', /* Allow natural width */
-              bgcolor: '#0D5E6D', /* Use accent color */
-              textTransform: 'none', /* No uppercase */
-              fontWeight: 500,
-              mb: 1, /* Keep margin bottom */
-              boxShadow: 'none', /* Remove shadow */
-              '&:hover': {
-                bgcolor: '#0A4A57' /* Slightly darker hover for the new color */
-              }
-            }}
-          >
-            {loading ? (
-              <>
-                <CircularProgress size={16} sx={{ mr: 1 }} color="inherit" />
-                Analyzing...
-              </>
-            ) : 'Generate' /* Changed from Regenerate */}
-          </Button>
-        </Box>
-
-        {/* Custom date range dialog */}
-        <Dialog open={customDateOpen} onClose={handleCloseCustomDate}>
-          <DialogTitle>Select Date Range</DialogTitle>
-          <DialogContent>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: 2,
-                mt: 2
-              }}>
-                <DatePicker
-                  label="Start Date"
-                  value={startDate}
-                  onChange={(newValue) => setStartDate(newValue)}
-                  format="MM/dd/yyyy"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      helperText: `Timezone: ${userTimeZone}`
-                    }
-                  }}
-                  maxDate={endDate}
-                />
-                <DatePicker
-                  label="End Date"
-                  value={endDate}
-                  onChange={(newValue) => setEndDate(newValue)}
-                  format="MM/dd/yyyy"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      helperText: `Timezone: ${userTimeZone}`
-                    }
-                  }}
-                  minDate={startDate}
-                  maxDate={new Date()}
-                />
-              </Box>
-            </LocalizationProvider>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseCustomDate}>Cancel</Button>
-            <Button 
-              onClick={handleConfirmCustomDate} 
-              variant="contained"
-              disabled={!isValidDateRange(startDate, endDate)}
-            >
-              Confirm
+              {loading ? (
+                <>
+                  <CircularProgress size={16} sx={{ mr: 1 }} color="inherit" />
+                  Analyzing...
+                </>
+              ) : 'Generate' /* Changed from Regenerate */}
             </Button>
-          </DialogActions>
-        </Dialog>
+          </Box>
 
-        {/* Popover wrapped with DraggablePopover */}
-        {isPopoverOpen && (
-          <DraggablePopover>
-            {({ ref, style, dragAttributes, dragListeners }) => (
-              <Popover
-                ref={ref}
-                style={style}
-                id={popoverId}
-                open={isPopoverOpen}
-                anchorEl={popoverAnchorEl}
-                onClose={() => {}}
-                disablePortal={false}
-                disableEnforceFocus
-                disableRestoreFocus
-                disableScrollLock={true}
-                keepMounted
-                anchorOrigin={{
-                  vertical: 'center',
-                  horizontal: 'center',
-                }}
-                transformOrigin={{
-                  vertical: 'center',
-                  horizontal: 'center',
-                }}
-                BackdropProps={{
-                  style: { pointerEvents: 'none' }
-                }}
-                sx={{
-                  pointerEvents: 'auto',
-                  '& .MuiPopover-paper': {
-                    pointerEvents: 'auto',
-                    position: 'static',
-                    width: {
-                      xs: '90vw',
-                      sm: '90vw',
-                      md: '380px',
-                      lg: '60vw'
-                    },
-                    minHeight: '200px',
-                    maxHeight: '80vh',
-                    height: 'auto',
-                    transform: 'none !important',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  },
-                  '& .MuiBackdrop-root': {
-                    backgroundColor: 'transparent'
-                  }
-                }}
-                PaperProps={{
-                  elevation: 0,
-                  sx: {
-                    borderRadius: '14px',
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-                    overflow: 'hidden'
-                  }
-                }}
-              >
-                <Card sx={{ 
-                  boxShadow: 'none', 
-                  backgroundColor: '#fff',
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  width: '100%'
+          {/* Custom date range dialog */}
+          <Dialog open={customDateOpen} onClose={handleCloseCustomDate}>
+            <DialogTitle>Select Date Range</DialogTitle>
+            <DialogContent>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: 2,
+                  mt: 2
                 }}>
-                  <CardHeader
-                    title={
-                      <div 
-                        {...dragAttributes} 
-                        {...dragListeners}
-                        style={{ cursor: 'grab' }}
-                      >
-                        {currentPopoverTitle}
-                      </div>
-                    }
-                    action={
-                      <IconButton 
-                        aria-label="close" 
-                        onClick={handlePopoverClose}
-                        size="small"
-                        sx={{ 
-                          color: '#888',
-                          padding: '8px',
-                          backgroundColor: 'rgba(0,0,0,0.05)',
-                          '&:hover': {
-                            backgroundColor: 'rgba(0,0,0,0.1)'
-                          }
-                        }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    }
-                    sx={{ 
-                      py: 1,
-                      px: 2,
-                      backgroundColor: '#f8f8f8',
-                      borderBottom: '1px solid #eee',
-                      '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
-                      width: '100%',
-                      '&:active': {
-                        cursor: 'grabbing'
+                  <DatePicker
+                    label="Start Date"
+                    value={startDate}
+                    onChange={(newValue) => setStartDate(newValue)}
+                    format="MM/dd/yyyy"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        helperText: `Timezone: ${userTimeZone}`
                       }
                     }}
+                    maxDate={endDate}
                   />
-                  <CardContent sx={{
-                    pt: 1.5,
-                    pb: 2,
-                    px: 2,
-                    width: '100%',
-                    height: '100%',
-                    overflow: 'auto'
-                  }}>
-                    <Typography
-                      variant="body2"
-                      component="div"
-                      sx={{
-                        whiteSpace: 'pre-line',
-                        lineHeight: 1.6,
-                        color: '#333',
-                        fontSize: '0.85rem',
-                        width: '100%',
-                        '& .bold-title': {
-                          fontWeight: 600,
-                          color: '#1d1d1f',
-                          display: 'inline'
-                        },
-                        '& p': {
-                          marginBottom: '1rem',
-                          width: '100%'
-                        },
-                        '& > div': {
-                          marginBottom: '1rem',
-                          width: '100%'
-                        },
-                        '& > div + div': {
-                          marginTop: '1rem'
-                        }
-                      }}
-                      dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent).split('\n').map(line => 
-                        line.trim() ? `<div>${line}</div>` : '<div>&nbsp;</div>'
-                      ).join('')}}
-                    />
-                  </CardContent>
-                </Card>
-              </Popover>
-            )}
-          </DraggablePopover>
-        )}
-
-        {/* AI Feedback Sections Container */} 
-        <Box sx={{ px: 0, pt: 1, pb: 2, mt: '5px' /* Move sections up */ }}>
-          {loading && (
-            <Box className="ai-feedback-loading-container">
-              <CircularProgress />
-              <Typography variant="body2" className="ai-feedback-loading-text">
-                Generating analysis...
-              </Typography>
-            </Box>
-          )}
-
-          {error && !loading && (
-            <Box className="ai-feedback-error" sx={{ borderRadius: '10px' }}>
-              {typeof error === 'string' ? error : error.message || 'An unknown error occurred'}
-            </Box>
-          )}
-
-          {!loading && !error && !feedback && (
-            <Box className="ai-feedback-placeholder">
-              {goalId ? 'Click the button to generate AI analysis report' : 'Please select a goal first'}
-            </Box>
-          )}
-
-          {feedback && !loading && !error && (
-            <Box className="ai-feedback-result">
-              {feedback.content && feedback.content.sections && feedback.content.sections.length > 0 ? (
-                <Box className="ai-feedback-structured-content" sx={{ mt: 0.5 }}>
-                  {feedback.content.sections
-                    .filter(section => section.title !== "---" && section.title.trim() !== "")
-                    .map((section, index) => {
-                      const title = section.title.replace(/^\*\*|\*\*$/g, '').trim();
-                      // Remove the preprocessing of content
-                      const content = section.content;
-                      
-                      return (
-                        <Box 
-                          key={index}
-                          sx={{
-                            mb: 0.8,
-                            width: '100%'
-                          }}
-                        >
-                          <Button
-                            variant="text"
-                            fullWidth
-                            onClick={(e) => handlePopoverOpen(e, title, content)}
-                            endIcon={<KeyboardArrowDownIcon sx={{ color: '#bbb' }}/>}
-                            sx={{
-                              justifyContent: 'space-between',
-                              textAlign: 'left',
-                              padding: '10px 8px',
-                              borderRadius: '8px',
-                              color: '#333',
-                              backgroundColor: '#ffffff',
-                              border: '1px solid #e5e5e5',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-                              '&:hover': {
-                                backgroundColor: '#f9f9f9',
-                                borderColor: '#ddd'
-                              },
-                              fontWeight: 400,
-                              fontSize: '0.875rem',
-                              textTransform: 'none'
-                            }}
-                          >
-                            {title}
-                          </Button>
-                        </Box>
-                      );
-                    })}
+                  <DatePicker
+                    label="End Date"
+                    value={endDate}
+                    onChange={(newValue) => setEndDate(newValue)}
+                    format="MM/dd/yyyy"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        helperText: `Timezone: ${userTimeZone}`
+                      }
+                    }}
+                    minDate={startDate}
+                    maxDate={new Date()}
+                  />
                 </Box>
-              ) : (
-                <Box className="ai-feedback-content" data-export-id="ai-analysis-content">
-                  {feedback.content && typeof feedback.content === 'object' 
-                    ? feedback.content.details || 'No analysis content available'
-                    : feedback.content || 'No analysis content available'}
-                </Box>
-              )}
-              
-              {/* Analysis Timestamp */}
-              <Box className="ai-feedback-timestamp" sx={{ textAlign: 'right', mt: 0 }}>
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    color: '#888',
-                    fontSize: '0.65rem' /* Slightly larger caption */
+              </LocalizationProvider>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseCustomDate}>Cancel</Button>
+              <Button 
+                onClick={handleConfirmCustomDate} 
+                variant="contained"
+                disabled={!isValidDateRange(startDate, endDate)}
+              >
+                Confirm
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Popover wrapped with DraggablePopover */}
+          {isPopoverOpen && (
+            <DraggablePopover
+              isDragging={isDragging}
+              setIsDragging={setIsDragging}
+              dragPosition={dragPosition}
+              setDragPosition={setDragPosition}
+            >
+              {({ ref, style, dragAttributes, dragListeners, isDragging }) => (
+                <Popover
+                  ref={ref}
+                  style={style}
+                  id={popoverId}
+                  open={isPopoverOpen}
+                  anchorEl={popoverAnchorEl}
+                  onClose={() => {}}
+                  disablePortal={false}
+                  disableEnforceFocus
+                  disableRestoreFocus
+                  disableScrollLock={true}
+                  keepMounted
+                  modality="none"
+                  anchorOrigin={{
+                    vertical: 'center',
+                    horizontal: 'center',
+                  }}
+                  transformOrigin={{
+                    vertical: 'center',
+                    horizontal: 'center',
+                  }}
+                  BackdropProps={{
+                    style: { pointerEvents: 'none' }
+                  }}
+                  sx={{
+                    pointerEvents: 'auto',
+                    '& .MuiPopover-paper': {
+                      pointerEvents: 'auto',
+                      position: 'static',
+                      width: {
+                        xs: '90vw',
+                        sm: '90vw',
+                        md: '380px',
+                        lg: '60vw'
+                      },
+                      minHeight: '200px',
+                      maxHeight: '80vh',
+                      height: 'auto',
+                      transform: 'none !important',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    },
+                    '& .MuiBackdrop-root': {
+                      backgroundColor: 'transparent'
+                    }
+                  }}
+                  PaperProps={{
+                    elevation: 0,
+                    sx: {
+                      borderRadius: '14px',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                      overflow: 'hidden'
+                    }
                   }}
                 >
-                  Analysis time: {lastUpdate ? formatTimestampAppleStyle(lastUpdate) : 'N/A'}
-                </Typography>
-              </Box>
-            </Box>
+                  <Card sx={{ 
+                    boxShadow: 'none', 
+                    backgroundColor: '#fff',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '100%'
+                  }}>
+                    <CardHeader
+                      title={
+                        <div 
+                          {...dragAttributes} 
+                          {...dragListeners}
+                          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                        >
+                          {currentPopoverTitle}
+                        </div>
+                      }
+                      action={
+                        <IconButton 
+                          aria-label="close" 
+                          onClick={handlePopoverClose}
+                          size="small"
+                          sx={{ 
+                            color: '#888',
+                            padding: '8px',
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(0,0,0,0.1)'
+                            }
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      }
+                      sx={{ 
+                        py: 1,
+                        px: 2,
+                        backgroundColor: '#f8f8f8',
+                        borderBottom: '1px solid #eee',
+                        '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
+                        width: '100%',
+                        '&:active': {
+                          cursor: 'grabbing'
+                        }
+                      }}
+                    />
+                    <CardContent sx={{
+                      pt: 1.5,
+                      pb: 2,
+                      px: 2,
+                      width: '100%',
+                      height: '100%',
+                      overflow: 'auto'
+                    }}>
+                      <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{
+                          whiteSpace: 'pre-line',
+                          lineHeight: 1.6,
+                          color: '#333',
+                          fontSize: '0.85rem',
+                          width: '100%',
+                          '& .bold-title': {
+                            fontWeight: 600,
+                            color: '#1d1d1f',
+                            display: 'inline'
+                          },
+                          '& p': {
+                            marginBottom: '1rem',
+                            width: '100%'
+                          },
+                          '& > div': {
+                            marginBottom: '1rem',
+                            width: '100%'
+                          },
+                          '& > div + div': {
+                            marginTop: '1rem'
+                          }
+                        }}
+                        dangerouslySetInnerHTML={{ __html: formatSectionContent(currentPopoverContent).split('\n').map(line => 
+                          line.trim() ? `<div>${line}</div>` : '<div>&nbsp;</div>'
+                        ).join('')}}
+                      />
+                    </CardContent>
+                  </Card>
+                </Popover>
+              )}
+            </DraggablePopover>
           )}
 
-          {/* Date range display */}
-          <Typography variant="body2" color="textSecondary">
-            Time Range: {renderDateRange()}
-          </Typography>
-        </Box>
-      </Paper>
+          {/* AI Feedback Sections Container */} 
+          <Box sx={{ px: 0, pt: 1, pb: 2, mt: '5px' /* Move sections up */ }}>
+            {loading && (
+              <Box className="ai-feedback-loading-container">
+                <CircularProgress />
+                <Typography variant="body2" className="ai-feedback-loading-text">
+                  Generating analysis...
+                </Typography>
+              </Box>
+            )}
+
+            {error && !loading && (
+              <Box className="ai-feedback-error" sx={{ borderRadius: '10px' }}>
+                {typeof error === 'string' ? error : error.message || 'An unknown error occurred'}
+              </Box>
+            )}
+
+            {!loading && !error && !feedback && (
+              <Box className="ai-feedback-placeholder">
+                {goalId ? 'Click the button to generate AI analysis report' : 'Please select a goal first'}
+              </Box>
+            )}
+
+            {feedback && !loading && !error && (
+              <Box className="ai-feedback-result">
+                {feedback.content && feedback.content.sections && feedback.content.sections.length > 0 ? (
+                  <Box className="ai-feedback-structured-content" sx={{ mt: 0.5 }}>
+                    {feedback.content.sections
+                      .filter(section => section.title !== "---" && section.title.trim() !== "")
+                      .map((section, index) => {
+                        const title = section.title.replace(/^\*\*|\*\*$/g, '').trim();
+                        // Remove the preprocessing of content
+                        const content = section.content;
+                        
+                        return (
+                          <Box 
+                            key={index}
+                            sx={{
+                              mb: 0.8,
+                              width: '100%'
+                            }}
+                          >
+                            <Button
+                              variant="text"
+                              fullWidth
+                              onClick={(e) => handlePopoverOpen(e, title, content)}
+                              endIcon={<KeyboardArrowDownIcon sx={{ color: '#bbb' }}/>}
+                              sx={{
+                                justifyContent: 'space-between',
+                                textAlign: 'left',
+                                padding: '10px 8px',
+                                borderRadius: '8px',
+                                color: '#333',
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e5e5e5',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                '&:hover': {
+                                  backgroundColor: '#f9f9f9',
+                                  borderColor: '#ddd'
+                                },
+                                fontWeight: 400,
+                                fontSize: '0.875rem',
+                                textTransform: 'none'
+                              }}
+                            >
+                              {title}
+                            </Button>
+                          </Box>
+                        );
+                      })}
+                  </Box>
+                ) : (
+                  <Box className="ai-feedback-content" data-export-id="ai-analysis-content">
+                    {feedback.content && typeof feedback.content === 'object' 
+                      ? feedback.content.details || 'No analysis content available'
+                      : feedback.content || 'No analysis content available'}
+                  </Box>
+                )}
+                
+                {/* Analysis Timestamp */}
+                <Box className="ai-feedback-timestamp" sx={{ textAlign: 'right', mt: 0 }}>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: '#888',
+                      fontSize: '0.65rem' /* Slightly larger caption */
+                    }}
+                  >
+                    Analysis time: {lastUpdate ? formatTimestampAppleStyle(lastUpdate) : 'N/A'}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Date range display */}
+            <Typography variant="body2" color="textSecondary">
+              Time Range: {renderDateRange()}
+            </Typography>
+          </Box>
+        </Paper>
+      </DroppableArea>
     </DndContext>
   );
 }
