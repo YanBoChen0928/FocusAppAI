@@ -52,30 +52,34 @@
 - Update **Report** model (`server/models/Report.js`):
   ```js
   memos: [
-    { phase: String, content: String, timestamp: Date, embedding?: [Number] }
+    { 
+      phase: String,       // 'originalMemo' | 'aiDraft' | 'finalMemo'
+      content: String,
+      timestamp: Date,
+      embedding?: [Number] // 1536-dimension vector for RAG
+    }
   ]
   ```
-- (Optional) Create separate **Memos** collection linked by `reportId`.
 
 ### 2.2 Backend API Endpoints
 
-1. **POST** `/api/memos/:reportId/suggest`
+1. **POST** `/api/reports/:reportId/memos/suggest`
 
-   - Save `originalMemo` to `memos`.
+   - Save `originalMemo` to `memos` array in Report document.
    - Call `RAGService.enhancePrompt({ aiFeedback, originalMemo })`.
    - Call OpenAI (e.g., `gpt-o4-mini`) to generate `aiDraft`.
-   - Save `aiDraft` with `embedding`.
+   - Save `aiDraft` with `embedding` to `memos` array.
    - Return `aiDraft`.
 
-2. **PATCH** `/api/memos/:reportId`
+2. **PATCH** `/api/reports/:reportId/memos`
 
    - Accept `finalMemo` from user.
    - Optionally generate and save its `embedding`.
-   - Update `memos` array.
+   - Update `memos` array in Report document.
 
-3. **GET** `/api/memos/:reportId`
+3. **GET** `/api/reports/:reportId/memos`
 
-   - Retrieve all memo phases for UI.
+   - Retrieve all memo phases for UI from Report document.
 
 ### 2.3 RAGService Enhancement
 
@@ -124,9 +128,9 @@ const WeeklyMemo = () => {
 
   // Component implementation:
   // - <textarea> for originalMemo
-  // - "AI Suggest" button → POST /suggest
+  // - "AI Suggest" button → POST /api/reports/:reportId/memos/suggest
   // - Editable display for aiDraft with "Accept AI" button
-  // - "Save" button → PATCH endpoint
+  // - "Save" button → PATCH /api/reports/:reportId/memos
   // - Timeline view showing phases and timestamps
 };
 ```
@@ -157,7 +161,7 @@ const WeeklyMemo = () => {
   - Model schema validations.
   - `RAGService.enhancePrompt` logic.
 - **Integration Tests**:
-  - `POST /suggest` and `PATCH /` flows.
+  - `POST /api/reports/:reportId/memos/suggest` and `PATCH /api/reports/:reportId/memos` flows.
 - **E2E Tests**:
   - Simulate full user flow: input → AI draft → finalize.
 - **DB Verification**:
@@ -165,8 +169,8 @@ const WeeklyMemo = () => {
 
 ### 2.7 Monitoring & Metrics
 
-- Log usage of `/suggest` endpoint and response times.
-- Track embedding storage success rates.
+- Log usage of `/api/reports/:reportId/memos/suggest` endpoint and response times.
+- Track embedding storage success rates in Report documents.
 - Gather user feedback on memo feature.
 
 ## 3. Feasible Methods & Technologies
