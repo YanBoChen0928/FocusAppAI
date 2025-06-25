@@ -215,11 +215,16 @@ export default function AIFeedback({ goalId }) {
   // Confirm custom date range
   const handleConfirmCustomDate = () => {
     if (isValidDateRange(startDate, endDate)) {
-      // First ensure date format is correct
       const start = startOfDay(startDate);
       const end = endOfDay(endDate);
       
-      // customDateRange
+      console.log('Date range calculated:', {
+        start: start.toLocaleString(),
+        end: end.toLocaleString(),
+        startUTC: start.toISOString(),
+        endUTC: end.toISOString()
+      });
+      
       setCustomDateRange({
         startDate: start.toISOString(),  // UTC for server
         endDate: end.toISOString(),      // UTC for server
