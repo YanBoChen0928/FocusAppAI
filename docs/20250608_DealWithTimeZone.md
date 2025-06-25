@@ -629,3 +629,38 @@ This design ensures:
 - Proper timezone conversion at appropriate points
 - Clear separation between storage (UTC) and display (local) formats
 - Reliable date range calculations regardless of user location
+
+## Revise Time Range (2025/06/24 Update)
+
+### Time Range Select Enhancement
+
+The Time Range selector in AIFeedback component has been enhanced to provide better user experience:
+
+1. **Dynamic Width Adjustment**
+   - Select component width adjusts based on custom date range content
+   - Maintains readability while showing selected date range
+
+2. **Custom Range Display**
+   ```javascript
+   <Select
+     sx={{ width: customDateRange.displayStart ? 'auto' : '200px' }}
+   >
+     <MenuItem value="custom">
+       {customDateRange.displayStart 
+         ? `${formatDisplayDate(customDateRange.displayStart)} - ${formatDisplayDate(customDateRange.displayEnd)}`
+         : 'Custom Range'}
+     </MenuItem>
+   </Select>
+   ```
+
+3. **User Interaction Flow**
+   - Initial state shows "Custom Range"
+   - After selection, displays actual date range
+   - Clicking again resets to "Custom Range" for new selection
+
+4. **Benefits**
+   - More intuitive date range visualization
+   - Clearer indication of current selection
+   - Improved user experience for date range selection
+
+This enhancement maintains the existing timezone handling while improving the UI/UX of date range selection.

@@ -465,7 +465,7 @@ export default function AIFeedback({ goalId }) {
             fullWidth 
             variant="outlined" 
             size="small" 
-            sx={{ mb: 1, maxWidth: '250px' }} /* Add max-width */
+            sx={{ mb: 1, maxWidth: customDateRange.displayStart && customDateRange.displayEnd ? 'auto' : '250px' }}
           >
             <InputLabel id="time-range-label">Time Range</InputLabel>
             <Select
@@ -476,7 +476,8 @@ export default function AIFeedback({ goalId }) {
               label="Time Range"
               sx={{
                 borderRadius: '8px',
-                backgroundColor: '#ffffff', /* White background for select */
+                backgroundColor: '#ffffff',
+                minWidth: '200px',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: '#ddd'
                 }
@@ -484,7 +485,11 @@ export default function AIFeedback({ goalId }) {
             >
               <MenuItem value="last7days">Last 7 Days</MenuItem>
               <MenuItem value="last30days">Last 30 Days</MenuItem>
-              <MenuItem value="custom">Custom Range</MenuItem>
+              <MenuItem value="custom">
+                {(timeRange === 'custom' && customDateRange.displayStart && customDateRange.displayEnd) 
+                  ? `${formatDisplayDate(customDateRange.displayStart)} - ${formatDisplayDate(customDateRange.displayEnd)}`
+                  : 'Custom Range'}
+              </MenuItem>
             </Select>
           </FormControl>
           
