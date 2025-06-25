@@ -677,3 +677,68 @@ class AIService {
    - Fine-tune prompts
    - Optimize response times
    - Implement caching
+
+## VIII. Popover Focus Management Enhancement
+
+### 1. Popover Modality Implementation
+
+#### Current Implementation
+```jsx
+<Popover
+  ref={ref}
+  style={style}
+  id={popoverId}
+  open={isPopoverOpen}
+  anchorEl={popoverAnchorEl}
+  onClose={handlePopoverClose}
+  disablePortal={false}
+  disableEnforceFocus
+  disableRestoreFocus
+  disableScrollLock={true}
+  keepMounted
+  // ... other props
+>
+```
+
+#### Alternative Implementation (Optional)
+```jsx
+<Popover
+  ref={ref}
+  style={style}
+  id={popoverId}
+  open={isPopoverOpen}
+  anchorEl={popoverAnchorEl}
+  onClose={handlePopoverClose}
+  modality="none"
+  disablePortal={false}
+  disableScrollLock={true}
+  keepMounted
+  // ... other props
+>
+```
+
+### 2. Implementation Notes
+
+1. **Current Status**:
+   - Using `disableEnforceFocus` and `disableRestoreFocus`
+   - Allows interaction with other elements when Popover is open
+   - May cause aria-hidden warnings
+
+2. **Alternative Approach**:
+   - Using `modality="none"`
+   - Provides same functionality
+   - Better accessibility support
+   - Reduces warnings
+   - Maintains existing close button functionality
+
+3. **Benefits of modality="none"**:
+   - Improves accessibility
+   - Maintains current interaction behavior
+   - Reduces console warnings
+   - Better follows MUI best practices
+
+4. **Implementation Considerations**:
+   - Can be used alongside existing implementation
+   - Does not require changes to close button logic
+   - Maintains current drag functionality
+   - Compatible with existing event handlers
