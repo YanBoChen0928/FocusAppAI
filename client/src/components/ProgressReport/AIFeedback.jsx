@@ -43,6 +43,7 @@ import {
   DndContext,
   useDraggable
 } from '@dnd-kit/core';
+import { startOfDay, endOfDay } from 'date-fns';
 
 // Last modified: 2025-06-21
 // Changes: Added paragraph spacing using MUI styling system
@@ -187,11 +188,18 @@ export default function AIFeedback({ goalId }) {
   // Confirm custom date range
   const handleConfirmCustomDate = () => {
     if (isValidDateRange(startDate, endDate)) {
-      const dateRange = getDateRangeForAnalysis('custom', {
-        start: startDate,
-        end: endDate
+      // First ensure date format is correct
+      const start = startOfDay(startDate);
+      const end = endOfDay(endDate);
+      
+      // customDateRange
+      setCustomDateRange({
+        startDate: start.toISOString(),  // UTC for server
+        endDate: end.toISOString(),      // UTC for server
+        displayStart: start,             // Local for display
+        displayEnd: end                  // Local for display
       });
-      setCustomDateRange(dateRange);
+      
       setCustomDateOpen(false);
       setTimeRange('custom');
     }
@@ -308,10 +316,22 @@ export default function AIFeedback({ goalId }) {
 
   // Date range display
   const renderDateRange = () => {
-    if (timeRange === 'custom' && customDateRange.displayStart && customDateRange.displayEnd) {
-      return getDateRangeString(customDateRange.displayStart, customDateRange.displayEnd);
+    // Handle custom range with incomplete date selection
+    if (timeRange === 'custom' && (!customDateRange.start || !customDateRange.end)) {
+      return 'Please select custom date range';
     }
-    const dateRange = getDateRangeForAnalysis(timeRange, customDateRange);
+    
+    // Handle custom range with complete date selection
+    if (timeRange === 'custom' && customDateRange.start && customDateRange.end) {
+      const dateRange = getDateRangeForAnalysis('custom', {
+        startDate: customDateRange.start,
+        endDate: customDateRange.end
+      });
+      return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
+    }
+    
+    // Handle preset ranges (7 days or 30 days)
+    const dateRange = getDateRangeForAnalysis(timeRange);
     return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
   };
 
