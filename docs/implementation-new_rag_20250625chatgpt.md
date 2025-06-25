@@ -313,3 +313,51 @@ async function generateAndStoreReport(goalId, userId, content, insights, recomme
 3. Implement basic RAG features
 4. Gradually add UI improvements
 
+---
+# 20250625 11:30 list
+数据结构冲突：
+第2.1节建议在Report模型中添加memos数组
+第3.1节显示直接存储报告字段
+需要决定：扩展Report模型 vs 创建独立Memos集合
+API端点不一致：
+第2.2节定义了/api/memos/:reportId/*端点
+checklist提到ReportService用于一般报告
+需要决定：memo是报告的一部分还是独立实体
+存储逻辑重复：
+第3.1节和Phase 1都提到自动存储，但实现细节不同
+需要决定：统一到ReportService实现
+
+### 🟡 Design Decisions Needed
+
+1. **Schema Choice**  
+   - We will extend the existing `Report` model with a `memos` array:
+     ```js
+     memos: [
+       { 
+         phase: String,       // 'originalMemo' | 'aiDraft' | 'finalMemo'
+         content: String,
+         timestamp: Date,
+         embedding?: [Number]
+       }
+     ]
+     ```
+   - Rationale: Keeps memos tightly coupled with their report, reduces cross-collection overhead.
+
+2. **API Structure**  
+   - Use nested routes under reports:
+     - `POST /api/reports/:reportId/memos/suggest`  
+     - `PATCH /api/reports/:reportId/memos/:memoId`  
+     - `GET /api/reports/:reportId/memos`  
+   - Rationale: Follows RESTful best practices and clearly expresses resource hierarchy.
+
+3. **Service Layer**  
+   - Consolidate all memo-related operations in `ReportService`:
+     ```js
+     class ReportService {
+       async addMemo(reportId, memoContent) { /* ... */ }
+       async updateMemo(reportId, memoId, finalContent) { /* ... */ }
+       async listMemos(reportId) { /* ... */ }
+       // existing methods...
+     }
+     ```
+   - Rationale: Centralizes data logic, while `RAGService` remains focused on prompt enhancement.
