@@ -349,17 +349,17 @@ export default function AIFeedback({ goalId }) {
   // Date range display
   const renderDateRange = () => {
     // Handle custom range with incomplete date selection
-    if (timeRange === 'custom' && (!customDateRange.start || !customDateRange.end)) {
+    if (timeRange === 'custom') {
+      // If already have a confirmed date range
+      if (customDateRange.displayStart && customDateRange.displayEnd) {
+        // Keep using getDateRangeForAnalysis
+        const dateRange = getDateRangeForAnalysis('custom', {
+          startDate: customDateRange.startDate,
+          endDate: customDateRange.endDate
+        });
+        return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
+      }
       return 'Please select custom date range';
-    }
-    
-    // Handle custom range with complete date selection
-    if (timeRange === 'custom' && customDateRange.start && customDateRange.end) {
-      const dateRange = getDateRangeForAnalysis('custom', {
-        startDate: customDateRange.start,
-        endDate: customDateRange.end
-      });
-      return getDateRangeString(dateRange.displayStart, dateRange.displayEnd);
     }
     
     // Handle preset ranges (7 days or 30 days)
