@@ -1,5 +1,4 @@
 import OpenAI from 'openai';
-import Progress from '../models/Progress.js';
 import Goal from '../models/Goal.js';
 import Report from '../models/Report.js';
 import NodeCache from 'node-cache';
@@ -84,22 +83,30 @@ class ReportService {
         throw new Error('Goal does not exist');
       }
 
-      // Get progress records
-      const progress = await Progress.find({
-        goalId,
-        date: {
-          $gte: period.startDate,
-          $lt: period.endDate
-        }
-      }).sort({ date: -1 });
+      // Get daily cards from goal (replacing progress records)
+      const dailyCards = goal.dailyCards.filter(card => {
+        const cardDate = new Date(card.date);
+        return cardDate >= period.startDate && cardDate < period.endDate;
+      }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      // Analyze data
+      // Analyze data from daily cards
       const analysis = {
-        totalRecords: progress.length,
-        completedTasks: progress.filter(p => p.completed).length,
-        completionRate: progress.length > 0 ? 
-          (progress.filter(p => p.completed).length / progress.length) * 100 : 0,
-        lastUpdate: progress.length > 0 ? progress[0].date : new Date(),
+        totalRecords: dailyCards.length,
+        completedTasks: dailyCards.filter(card => {
+          // Count cards that have either main task completed or any task completion
+          const hasMainTaskCompleted = card.completed?.dailyTask;
+          const hasAnyTaskCompleted = card.taskCompletions && 
+            Object.values(card.taskCompletions).some(completed => completed === true);
+          return hasMainTaskCompleted || hasAnyTaskCompleted;
+        }).length,
+        completionRate: dailyCards.length > 0 ? 
+          (dailyCards.filter(card => {
+            const hasMainTaskCompleted = card.completed?.dailyTask;
+            const hasAnyTaskCompleted = card.taskCompletions && 
+              Object.values(card.taskCompletions).some(completed => completed === true);
+            return hasMainTaskCompleted || hasAnyTaskCompleted;
+          }).length / dailyCards.length) * 100 : 0,
+        lastUpdate: dailyCards.length > 0 ? dailyCards[0].date : new Date(),
         timeRange: {
           start: period.startDate,
           end: period.endDate,
@@ -108,7 +115,7 @@ class ReportService {
       };
 
       // Prepare base prompt
-      let prompt = this._preparePrompt(goal, progress, analysis);
+      let prompt = this._preparePrompt(goal, dailyCards, analysis);
       
       // Enhance prompt with RAG if needed
       if (isDeepAnalysis) {
@@ -177,7 +184,7 @@ class ReportService {
     return shouldUseRAG;
   }
 
-  static _preparePrompt(goal, progress, analysis) {
+  static _preparePrompt(goal, dailyCards, analysis) {
     return `
 As a professional goal analysis assistant, please generate a detailed analysis report based on the following information:
 
@@ -186,13 +193,29 @@ Title: ${goal.title}
 Current Task: ${goal.currentSettings?.dailyTask || 'None'}
 Priority: ${goal.priority || 'Not set'}
 
-Today's Progress Data:
+Daily Progress Data:
 - Total Records: ${analysis.totalRecords}
 - Completed Tasks: ${analysis.completedTasks}
 - Completion Rate: ${analysis.completionRate.toFixed(1)}%
 
-Detailed Records:
-${progress.map(p => `- ${new Date(p.date).toLocaleTimeString()}: ${p.content || 'No content'}`).join('\n')}
+Detailed Daily Records:
+${dailyCards.map(card => {
+  const date = new Date(card.date).toLocaleDateString();
+  const taskStatus = card.completed?.dailyTask ? '✓' : '✗';
+  const rewardStatus = card.completed?.dailyReward ? '✓' : '✗';
+  
+  // Get task completions summary
+  const taskCompletions = card.taskCompletions || {};
+  const completedTasksCount = Object.values(taskCompletions).filter(completed => completed === true).length;
+  const totalTasksCount = Object.keys(taskCompletions).length;
+  
+  // Get records summary
+  const recordsText = card.records && card.records.length > 0 
+    ? card.records.map(r => r.content).join('; ')
+    : 'No detailed records';
+  
+  return `- ${date}: Main Task ${taskStatus}, Reward ${rewardStatus}, Sub-tasks (${completedTasksCount}/${totalTasksCount}), Notes: ${recordsText}`;
+}).join('\n')}
 
 Please analyze from the following aspects:
 1. Progress Assessment: Analyze the current progress, including completion rate and efficiency

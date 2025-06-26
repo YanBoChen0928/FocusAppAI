@@ -94,7 +94,31 @@ const ReportSchema = new mongoose.Schema(
         },
         message: props => `${props.value} must have exactly 1536 dimensions!`
       }
-    }
+    },
+    memos: [{
+      phase: {
+        type: String,
+        enum: ['originalMemo', 'aiDraft', 'finalMemo'],
+        required: true
+      },
+      content: { 
+        type: String, 
+        required: true 
+      },
+      timestamp: { 
+        type: Date, 
+        default: Date.now 
+      },
+      embedding: {
+        type: [Number],
+        validate: {
+          validator: function(v) {
+            return !v || v.length === 1536;
+          },
+          message: 'Embedding must have exactly 1536 dimensions'
+        }
+      }
+    }]
   },
   {
     collection: "reports",
@@ -106,6 +130,18 @@ ReportSchema.index(
   { embedding: "vector" },
   {
     name: "reportEmbeddings",
+    vectorSearchOptions: {
+      numDimensions: 1536,
+      similarity: "cosine"
+    }
+  }
+);
+
+// Add vector index for memos.embedding
+ReportSchema.index(
+  { "memos.embedding": "vector" },
+  {
+    name: "memoEmbeddings",
     vectorSearchOptions: {
       numDimensions: 1536,
       similarity: "cosine"
