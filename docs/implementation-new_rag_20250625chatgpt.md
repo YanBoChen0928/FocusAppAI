@@ -33,7 +33,7 @@
    - **Issue**: Both Section 3.1 and Phase 1 checklist mention automatic storage, with different implementation details
    - **Resolution**: Consolidate into single ReportService implementation
 
-### 🟡 Design Decisions Needed:
+### 🟡 Design Decisions Needed
 
 1. **Schema Choice**: Report.memos vs separate Memos collection
 2. **API Structure**: Memo-specific endpoints vs general report endpoints
@@ -339,19 +339,6 @@ async function generateAndStoreReport(
 
 ---
 
-# 20250625 11:30 list
-
-数据结构冲突：
-第 2.1 节建议在 Report 模型中添加 memos 数组
-第 3.1 节显示直接存储报告字段
-需要决定：扩展 Report 模型 vs 创建独立 Memos 集合
-API 端点不一致：
-第 2.2 节定义了/api/memos/:reportId/\*端点
-checklist 提到 ReportService 用于一般报告
-需要决定：memo 是报告的一部分还是独立实体
-存储逻辑重复：
-第 3.1 节和 Phase 1 都提到自动存储，但实现细节不同
-需要决定：统一到 ReportService 实现
 
 ### 🟡 Design Decisions Needed
 
@@ -395,3 +382,97 @@ checklist 提到 ReportService 用于一般报告
      }
      ```
    - Rationale: Centralizes data logic, while `RAGService` remains focused on prompt enhancement.
+
+## 7. MVP Implementation Details
+
+### 7.1 Report Model Schema Update
+
+**File**: `server/models/Report.js`
+
+Add the following to the existing ReportSchema:
+
+```javascript
+// Add memos field to existing ReportSchema
+memos: [{
+  phase: {
+    type: String,
+    enum: ['originalMemo', 'aiDraft', 'finalMemo'],
+    required: true
+  },
+  content: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  embedding: {
+    type: [Number],
+    validate: {
+      validator: function(v) {
+        return !v || v.length === 1536;
+      },
+      message: 'Embedding must have exactly 1536 dimensions'
+    }
+  }
+}]
+
+// Add vector index for memos.embedding
+ReportSchema.index(
+  { "memos.embedding": "vector" },
+  {
+    name: "memoEmbeddings",
+    vectorSearchOptions: {
+      numDimensions: 1536,
+      similarity: "cosine"
+    }
+  }
+);
+```
+
+### 7.2 Basic Error Handling
+
+**API Error Response Format**:
+```javascript
+// Standard error response structure
+const errorResponse = {
+  success: false,
+  error: {
+    code: 'MEMO_SAVE_FAILED',
+    message: 'Failed to save memo',
+    details: error.message
+  }
+};
+```
+
+**Frontend Error Handling**:
+```javascript
+// Error handling in React components
+const handleApiError = (error) => {
+  const message = error.response?.data?.error?.message || 'Something went wrong';
+  setError(message);
+  
+  // Show user-friendly notification
+  console.error('API Error:', error);
+};
+
+// Usage in memo operations
+try {
+  const response = await api.post(`/reports/${reportId}/memos/suggest`, data);
+  // Handle success
+} catch (error) {
+  handleApiError(error);
+}
+```
+
+**Backend Error Handling**:
+```javascript
+// Middleware for consistent error responses
+const errorHandler = (err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  
+  res.status(statusCode).json({
+    success: false,
+    error: {
+      code: err.code || 'INTERNAL_ERROR',
+      message: err.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    }
+  });
+};
+```
