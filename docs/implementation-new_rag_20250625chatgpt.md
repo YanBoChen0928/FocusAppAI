@@ -1,6 +1,7 @@
 # Implementation Plan: New RAG Feature (Weekly Memo)
 
 ## Related Files
+
 - `focus-app/docs/implementation-new_rag_20250625chatgpt.md` (Current file)
 - `focus-app/docs/Implementation-20250625_newRAG_implementation_plan.md` (Reference)
 - `focus-app/server/models/Report.js` (Model to be modified)
@@ -8,6 +9,7 @@
 - `focus-app/server/services/RAGService.js` (Service to be enhanced)
 
 ## Modification History
+
 - 2025/06/25: Initial implementation plan
 - 2025/06/25: Added file references and checklist
 - 2025/06/25: Format correction and checklist completion
@@ -15,13 +17,15 @@
 
 ## Design Conflict Analysis
 
-### 🔴 Identified Conflicts:
+### 🔴 Identified Conflicts:(solved)
 
 1. **Data Structure Conflict**
+
    - **Issue**: Section 2.1 proposes adding `memos` array to Report model, but Section 3.1 shows storing direct report fields
    - **Resolution**: Choose one approach - either extend Report model or create separate Memos collection
 
 2. **API Endpoint Inconsistency**
+
    - **Issue**: Section 2.2 defines `/api/memos/:reportId/*` endpoints, but checklist mentions ReportService for general reports
    - **Resolution**: Clarify if memos are part of reports or separate entities
 
@@ -52,7 +56,7 @@
 - Update **Report** model (`server/models/Report.js`):
   ```js
   memos: [
-    { 
+    {
       phase: String,       // 'originalMemo' | 'aiDraft' | 'finalMemo'
       content: String,
       timestamp: Date,
@@ -101,11 +105,11 @@ async function enhancePrompt({ aiFeedback, userMemo }) {
 
     Please generate a concise, actionable weekly reminder memo.
   `;
-  
+
   try {
     return await generateEnhancedPrompt(prompt);
   } catch (error) {
-    console.error('Error enhancing prompt:', error);
+    console.error("Error enhancing prompt:", error);
     return userMemo; // Fallback to original memo
   }
 }
@@ -120,9 +124,9 @@ async function enhancePrompt({ aiFeedback, userMemo }) {
  */
 const WeeklyMemo = () => {
   // State management
-  const [originalMemo, setOriginalMemo] = useState('');
+  const [originalMemo, setOriginalMemo] = useState("");
   const [aiDraft, setAiDraft] = useState(null);
-  const [finalMemo, setFinalMemo] = useState('');
+  const [finalMemo, setFinalMemo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -181,7 +185,6 @@ const WeeklyMemo = () => {
 - **Storage**: MongoDB vector index for `embedding` field.
 - **UI**: Timeline with CSS Grid or lightweight library.
 
-
 ### 3.1 MongoDB Storage Process
 
 ```javascript
@@ -194,7 +197,14 @@ const WeeklyMemo = () => {
  * @param {Array} recommendations - AI recommendations
  * @param {Array} embedding - Vector embedding (1536 dimensions)
  */
-async function generateAndStoreReport(goalId, userId, content, insights, recommendations, embedding) {
+async function generateAndStoreReport(
+  goalId,
+  userId,
+  content,
+  insights,
+  recommendations,
+  embedding
+) {
   const report = new Report({
     goalId,
     userId,
@@ -207,25 +217,27 @@ async function generateAndStoreReport(goalId, userId, content, insights, recomme
 
   try {
     await report.save(); // Save to MongoDB FocusFinalProject.reports collection
-    console.log('Report saved successfully:', report);
+    console.log("Report saved successfully:", report);
     return report;
   } catch (error) {
-    console.error('Error saving report:', error);
+    console.error("Error saving report:", error);
     throw error;
   }
 }
+```
 
 ## 4. Implementation Checklist
 
 ### Phase 1: MongoDB Integration (Highest Priority)
+
 - [ ] **Database Schema Updates**
   - [ ] Update Report Model
     - [ ] Add embedding field (1536-dimension vector)
     - [ ] Configure vector index
     - [ ] Add timestamp fields
     - [ ] Implement validation rules
-  
 - [ ] **Automatic CRUD Operations**
+
   - [ ] Create ReportService class
     ```javascript
     class ReportService {
@@ -248,7 +260,9 @@ async function generateAndStoreReport(goalId, userId, content, insights, recomme
   - [ ] Create backup strategies
 
 ### Phase 2: RAG Enhancement
+
 - [ ] **Vector Search Implementation**
+
   - [ ] Configure MongoDB vector index
   - [ ] Implement similarity calculation
   - [ ] Optimize search performance
@@ -261,7 +275,9 @@ async function generateAndStoreReport(goalId, userId, content, insights, recomme
   - [ ] Add feedback quality metrics
 
 ### Phase 3: UI/UX Optimization
+
 - [ ] **New UI Components**
+
   - [ ] Add feedback editing interface
   - [ ] Implement real-time preview
   - [ ] Add history display
@@ -274,12 +290,15 @@ async function generateAndStoreReport(goalId, userId, content, insights, recomme
   - [ ] Add user preferences
 
 ### Execution Priority
+
 1. **MongoDB Integration (Current Focus)**
+
    - Essential for data persistence
    - Foundation for RAG functionality
    - Required for all subsequent features
 
 2. **RAG Enhancement**
+
    - Builds on MongoDB integration
    - Improves AI feedback quality
    - Enables advanced features
@@ -290,54 +309,58 @@ async function generateAndStoreReport(goalId, userId, content, insights, recomme
    - Polishes the interface
 
 ### Risk Assessment
+
 - **Technical Risks**
   - MongoDB vector search performance
   - Data consistency challenges
   - API response times
-  
 - **User Experience Risks**
   - Learning curve for new features
   - System responsiveness
   - Data recovery needs
 
 ### Monitoring Metrics
+
 - **Performance Metrics**
   - MongoDB write success rate: >95%
   - Query response time: <3 seconds
   - Cache hit ratio: >80%
-  
 - **User Metrics**
   - Feature usage statistics
   - Error occurrence rate
   - User satisfaction scores
 
 ### Next Steps
+
 1. Begin with MongoDB integration
 2. Set up monitoring system
 3. Implement basic RAG features
 4. Gradually add UI improvements
 
 ---
+
 # 20250625 11:30 list
+
 数据结构冲突：
-第2.1节建议在Report模型中添加memos数组
-第3.1节显示直接存储报告字段
-需要决定：扩展Report模型 vs 创建独立Memos集合
-API端点不一致：
-第2.2节定义了/api/memos/:reportId/*端点
-checklist提到ReportService用于一般报告
-需要决定：memo是报告的一部分还是独立实体
+第 2.1 节建议在 Report 模型中添加 memos 数组
+第 3.1 节显示直接存储报告字段
+需要决定：扩展 Report 模型 vs 创建独立 Memos 集合
+API 端点不一致：
+第 2.2 节定义了/api/memos/:reportId/\*端点
+checklist 提到 ReportService 用于一般报告
+需要决定：memo 是报告的一部分还是独立实体
 存储逻辑重复：
-第3.1节和Phase 1都提到自动存储，但实现细节不同
-需要决定：统一到ReportService实现
+第 3.1 节和 Phase 1 都提到自动存储，但实现细节不同
+需要决定：统一到 ReportService 实现
 
 ### 🟡 Design Decisions Needed
 
-1. **Schema Choice**  
+1. **Schema Choice**
+
    - We will extend the existing `Report` model with a `memos` array:
      ```js
      memos: [
-       { 
+       {
          phase: String,       // 'originalMemo' | 'aiDraft' | 'finalMemo'
          content: String,
          timestamp: Date,
@@ -347,20 +370,27 @@ checklist提到ReportService用于一般报告
      ```
    - Rationale: Keeps memos tightly coupled with their report, reduces cross-collection overhead.
 
-2. **API Structure**  
+2. **API Structure**
+
    - Use nested routes under reports:
-     - `POST /api/reports/:reportId/memos/suggest`  
-     - `PATCH /api/reports/:reportId/memos/:memoId`  
-     - `GET /api/reports/:reportId/memos`  
+     - `POST /api/reports/:reportId/memos/suggest`
+     - `PATCH /api/reports/:reportId/memos/:memoId`
+     - `GET /api/reports/:reportId/memos`
    - Rationale: Follows RESTful best practices and clearly expresses resource hierarchy.
 
-3. **Service Layer**  
+3. **Service Layer**
    - Consolidate all memo-related operations in `ReportService`:
      ```js
      class ReportService {
-       async addMemo(reportId, memoContent) { /* ... */ }
-       async updateMemo(reportId, memoId, finalContent) { /* ... */ }
-       async listMemos(reportId) { /* ... */ }
+       async addMemo(reportId, memoContent) {
+         /* ... */
+       }
+       async updateMemo(reportId, memoId, finalContent) {
+         /* ... */
+       }
+       async listMemos(reportId) {
+         /* ... */
+       }
        // existing methods...
      }
      ```
