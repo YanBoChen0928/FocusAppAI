@@ -308,3 +308,76 @@ const toggleStep = (index) => {
 - 对于复合组件（如Stepper+Step+StepContent），确保理解完整的数据流
 
 **🎉 测试结果**：所有三个步骤现在都能正确响应点击事件进行展开/收起操作！
+
+
+# 20250627 0850 improve the alert
+## Phase 4: Implementation
+
+**Step 4.1** - 修改WeeklyMemo組件的錯誤處理邏輯，提供友善的提示訊息
+## Phase 5: Documentation & Reporting
+
+**Step 5.1** - 中文總結：
+
+### 修改的文件列表 (Modified files list)
+- `focus-app/client/src/components/WeeklyMemo.jsx`
+
+### 更改摘要 (Change summary)
+改善了WeeklyMemo組件的錯誤處理，當用戶沒有AI報告數據時，提供友善的提示訊息"Please generate AI Progress Analysis first"而非錯誤警告。
+
+### 簡要說明 (Brief explanation)
+修改了三個地方的錯誤處理邏輯，確保當沒有AI Progress Analysis報告時，用戶會收到清楚的指引而非技術性錯誤訊息。
+
+### 修改部分的詳細功能說明 (Detailed functionality of modified parts)
+
+#### **1. WeeklyMemoFab點擊處理改善**
+```javascript
+// 修改前
+if (!disabled && reportId) {
+  setOpen(true);
+}
+
+// 修改後
+if (!disabled) {
+  if (reportId) {
+    setOpen(true);
+  } else {
+    alert('Please generate AI Progress Analysis first');
+  }
+}
+```
+- **功能**：當用戶點擊WeeklyMemo FAB但沒有reportId時，顯示友善提示
+- **改善**：從無反應變為明確指引用戶需要先產生AI分析
+
+#### **2. loadMemos錯誤處理改善**
+```javascript
+// 修改前
+setError('Failed to load existing memos');
+
+// 修改後
+if (error.response?.status === 404) {
+  setError('Please generate AI Progress Analysis first');
+} else {
+  setError('Failed to load existing memos');
+}
+```
+- **功能**：當API返回404錯誤時，提供更具體的指引
+- **改善**：區分報告不存在(404)和其他錯誤類型
+
+#### **3. handleSaveMemo錯誤處理改善**
+```javascript
+// 修改前
+alert('报告未找到，请重新生成AI分析报告');
+
+// 修改後
+alert('Please generate AI Progress Analysis first');
+```
+- **功能**：統一錯誤訊息語言和內容
+- **改善**：從中文改為英文，提供一致的用戶體驗
+
+#### **解決的問題**
+- ✅ **用戶友善性**：明確告訴用戶需要先產生AI分析
+- ✅ **錯誤處理**：區分不同類型的錯誤情況
+- ✅ **語言一致性**：統一使用英文錯誤訊息
+- ✅ **指引清楚**：用戶知道下一步應該做什麼
+
+**🎯 現在當用戶點擊WeeklyMemo但沒有AI報告時，會收到清楚的指引："Please generate AI Progress Analysis first"**

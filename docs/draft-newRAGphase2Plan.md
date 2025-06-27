@@ -1747,3 +1747,13 @@ WeeklyMemo和AIFeedback虽然使用相同技术栈，但服务于不同的用户
 - 🔧 **技术准备度高** → 实施风险低，约需1-2天开发时间
 
 **需要您的决策**: 是否希望我继续实施Phase 2.3的Next Week Planning功能？
+
+
+📋 Task 3: Phase 2.3功能範圍確認
+✅ Phase 2.3功能範圍確認：
+根據文檔分析，Phase 2.3確實包含您提到的功能：
+Phase 2.3 功能	狀態	說明
+Next Week Planning UI	❌ 待實施	第4階段UI界面
+nextWeekPlan支持激活	❌ 待實施	Schema已支持，需激活UI
+4階段完整工作流	❌ 待實施	originalMemo→aiDraft→finalMemo→nextWeekPlan
+FAB按鈕擴展	❌ 待實施	您提到的按鈕旁邊顯示功能
