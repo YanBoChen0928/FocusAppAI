@@ -49,6 +49,7 @@ import {
   PointerSensor
 } from '@dnd-kit/core';
 import { startOfDay, endOfDay } from 'date-fns';
+import { WeeklyMemoFab } from '../WeeklyMemo';
 
 // Last modified: 2025-06-21
 // Changes: Added paragraph spacing using MUI styling system
@@ -874,6 +875,14 @@ export default function AIFeedback({ goalId }) {
           </Box>
         </Paper>
       </DroppableArea>
+      
+      {/* Weekly Memo Floating Action Button - Phase 2.1 */}
+      {feedback && feedback.id && (
+        <WeeklyMemoFab 
+          reportId={feedback.id}
+          disabled={loading}
+        />
+      )}
     </DndContext>
   );
 }

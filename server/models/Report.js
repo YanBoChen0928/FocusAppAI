@@ -88,17 +88,19 @@ const ReportSchema = new mongoose.Schema(
       sparse: true,
       index: true,
       description: "Vector embedding for RAG functionality",
+      default: undefined,
       validate: {
         validator: function(v) {
-          return !v || v.length === 1536; // text-embedding-ada-002 dimensions
+          if (v === undefined || v === null) return true;
+          return Array.isArray(v) && v.length === 1536;
         },
-        message: props => `${props.value} must have exactly 1536 dimensions!`
+        message: 'Embedding must have exactly 1536 dimensions when provided!'
       }
     },
     memos: [{
       phase: {
         type: String,
-        enum: ['originalMemo', 'aiDraft', 'finalMemo'],
+        enum: ['originalMemo', 'aiDraft', 'finalMemo', 'nextWeekPlan'], // Support 4 phases for future expansion
         required: true
       },
       content: { 
@@ -111,11 +113,13 @@ const ReportSchema = new mongoose.Schema(
       },
       embedding: {
         type: [Number],
+        default: undefined,
         validate: {
           validator: function(v) {
-            return !v || v.length === 1536;
+            if (v === undefined || v === null) return true;
+            return Array.isArray(v) && v.length === 1536;
           },
-          message: 'Embedding must have exactly 1536 dimensions'
+          message: 'Memo embedding must have exactly 1536 dimensions when provided!'
         }
       }
     }]

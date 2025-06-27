@@ -314,6 +314,229 @@ Please reply in English, with a positive and encouraging tone, and specific sugg
       throw new Error('AI analysis generation failed, please try again later');
     }
   }
+
+  // ===== MEMO FUNCTIONALITY - Phase 2.1 =====
+  
+  /**
+   * Add memo to report (Phase 1: Original Memo)
+   * @param {string} reportId - Report ID
+   * @param {string} content - Memo content
+   * @param {string} phase - Memo phase (originalMemo, aiDraft, finalMemo)
+   * @returns {Object} Updated report
+   */
+  static async addMemo(reportId, content, phase = 'originalMemo') {
+    try {
+      const report = await Report.findById(reportId);
+      if (!report) {
+        throw new Error('Report not found');
+      }
+
+      // Generate embedding for memo content
+      let embedding = null;
+      try {
+        embedding = await RAGService.generateEmbedding(content);
+        console.log('[Memo] Successfully generated embedding for memo');
+      } catch (error) {
+        console.warn('[Memo] Failed to generate embedding:', error);
+      }
+
+      // Add memo to report
+      const memo = {
+        phase,
+        content,
+        timestamp: new Date(),
+        embedding
+      };
+
+      report.memos.push(memo);
+      await report.save();
+
+      console.log(`[Memo] Added ${phase} memo to report ${reportId}`);
+      return report;
+    } catch (error) {
+      console.error('[Memo] Add memo failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate AI draft memo based on report content and user's original memo
+   * @param {string} reportId - Report ID
+   * @returns {Object} AI-generated draft content
+   */
+  static async generateAiDraft(reportId) {
+    try {
+      const report = await Report.findById(reportId).populate('goalId');
+      if (!report) {
+        throw new Error('Report not found');
+      }
+
+      // Get original memo
+      const originalMemo = report.memos.find(m => m.phase === 'originalMemo');
+      if (!originalMemo) {
+        throw new Error('Original memo not found. Please create original memo first.');
+      }
+
+      // Prepare prompt for AI draft generation
+      const prompt = this._prepareMemoPrompt(report, originalMemo.content);
+      
+      // Enhance with RAG context
+      let enhancedPrompt = prompt;
+      try {
+        enhancedPrompt = await RAGService.enhancePromptWithContext(prompt, report.goalId._id);
+        console.log('[Memo] Successfully enhanced prompt with RAG context');
+      } catch (error) {
+        console.warn('[Memo] Failed to enhance prompt with RAG:', error);
+      }
+
+      // Generate AI draft using gpt-o4-mini (RAG-enhanced)
+      const aiContent = await this._generateMemoContent(enhancedPrompt, true);
+      
+      // Add AI draft to report
+      await this.addMemo(reportId, aiContent, 'aiDraft');
+
+      return { content: aiContent };
+    } catch (error) {
+      console.error('[Memo] Generate AI draft failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update memo content
+   * @param {string} reportId - Report ID
+   * @param {string} phase - Memo phase to update
+   * @param {string} content - New content
+   * @returns {Object} Updated report
+   */
+  static async updateMemo(reportId, phase, content) {
+    try {
+      const report = await Report.findById(reportId);
+      if (!report) {
+        throw new Error('Report not found');
+      }
+
+      // Find memo to update
+      const memoIndex = report.memos.findIndex(m => m.phase === phase);
+      if (memoIndex === -1) {
+        throw new Error(`Memo with phase ${phase} not found`);
+      }
+
+      // Generate new embedding
+      let embedding = null;
+      try {
+        embedding = await RAGService.generateEmbedding(content);
+      } catch (error) {
+        console.warn('[Memo] Failed to generate embedding for updated memo:', error);
+      }
+
+      // Update memo
+      report.memos[memoIndex].content = content;
+      report.memos[memoIndex].timestamp = new Date();
+      if (embedding) {
+        report.memos[memoIndex].embedding = embedding;
+      }
+
+      await report.save();
+
+      console.log(`[Memo] Updated ${phase} memo in report ${reportId}`);
+      return report;
+    } catch (error) {
+      console.error('[Memo] Update memo failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all memos for a report
+   * @param {string} reportId - Report ID
+   * @returns {Array} List of memos
+   */
+  static async listMemos(reportId) {
+    try {
+      const report = await Report.findById(reportId).select('memos');
+      if (!report) {
+        throw new Error('Report not found');
+      }
+
+      return report.memos.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    } catch (error) {
+      console.error('[Memo] List memos failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Prepare prompt for memo generation
+   * @param {Object} report - Report object
+   * @param {string} originalMemo - User's original memo content
+   * @returns {string} Formatted prompt
+   */
+  static _prepareMemoPrompt(report, originalMemo) {
+    const goal = report.goalId;
+    return `
+As a professional goal reflection assistant, help the user create a comprehensive weekly memo based on their AI progress analysis and initial thoughts.
+
+Context Information:
+Goal: ${goal.title}
+Analysis Period: ${new Date(report.period.startDate).toLocaleDateString()} - ${new Date(report.period.endDate).toLocaleDateString()}
+
+AI Progress Analysis:
+${report.content}
+
+User's Initial Memo:
+${originalMemo}
+
+Please create a well-structured weekly memo that:
+1. **Progress Summary**: Synthesize key achievements and challenges from the analysis
+2. **Personal Insights**: Incorporate and expand on the user's initial thoughts
+3. **Pattern Recognition**: Identify trends and patterns in the user's progress
+4. **Actionable Reflections**: Provide specific, actionable insights for improvement
+
+Guidelines:
+- Keep the tone personal and reflective
+- Balance analytical insights with emotional support
+- Focus on growth and learning opportunities
+- Maintain a length of 200-400 words
+- Use clear, engaging language
+
+Please respond in English with a well-formatted memo.
+    `.trim();
+  }
+
+  /**
+   * Generate memo content using AI
+   * @param {string} prompt - Generation prompt
+   * @param {boolean} useAdvancedModel - Whether to use gpt-o4-mini
+   * @returns {string} Generated content
+   */
+  static async _generateMemoContent(prompt, useAdvancedModel = true) {
+    try {
+      console.time('[Memo] Content generation');
+      const completion = await openai.chat.completions.create({
+        model: useAdvancedModel ? "gpt-o4-mini" : "gpt-4o-mini",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a thoughtful reflection assistant helping users create meaningful weekly memos." 
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 800
+      });
+      console.timeEnd('[Memo] Content generation');
+
+      return completion.choices[0].message.content;
+    } catch (error) {
+      console.error('[Memo] Content generation failed:', error);
+      if (useAdvancedModel) {
+        console.warn('[Memo] Falling back to GPT-4o-mini due to API error');
+        return this._generateMemoContent(prompt, false);
+      }
+      throw new Error('Memo content generation failed, please try again later');
+    }
+  }
 }
 
 export default ReportService;

@@ -31,7 +31,7 @@ const api = axios.create({
   timeout: 10000, // 10 seconds
 });
 
-// 尝试探测本地API端口是否可用
+// Attempt to detect if the local API port is available
 const checkLocalApiPort = async (basePort = 5050, maxAttempts = 3) => {
   if (import.meta.env.PROD === true || import.meta.env.MODE === "production") return API_URL; // 生产环境不需要探测
 
@@ -47,29 +47,29 @@ const checkLocalApiPort = async (basePort = 5050, maxAttempts = 3) => {
       });
       
       if (response.ok) {
-        console.log(`找到可用的API端口: ${portToCheck}`);
+        console.log(`found available API port: ${portToCheck}`);
         return `http://localhost:${portToCheck}`;
       }
     } catch (error) {
-      console.log(`端口 ${portToCheck} 无法连接:`, error.message);
+      console.log(`port ${portToCheck} cannot be connected:`, error.message);
     }
   }
   
-  console.log(`无法找到可用的API端口，使用默认地址: ${API_URL}`);
+  console.log(`cannot find available API port, using default address: ${API_URL}`);
   return API_URL;
 };
 
-// 立即开始探测端口 (异步)
+// Start detecting ports immediately (async)
 let detectedApiUrl = API_URL;
 checkLocalApiPort().then(url => {
   detectedApiUrl = url;
   console.log("API URL已更新为:", detectedApiUrl);
 });
 
-// 请求拦截器，动态设置baseURL
+// request interceptor, dyna  mically set baseURL
 api.interceptors.request.use(
   async (config) => {
-    // 确保使用最新检测到的API URL
+    // ensure using the latest detected API URL
     config.baseURL = detectedApiUrl;
     
     // record the complete request URL, helpful for debugging
@@ -478,7 +478,68 @@ const apiService = {
         });
     },
     getLatest: (goalId) => api.get(`/api/reports/${goalId}/latest`),
-    rate: (feedbackId, rating) => api.post(`/api/reports/${feedbackId}/rate`, { rating })
+    rate: (feedbackId, rating) => api.post(`/api/reports/${feedbackId}/rate`, { rating }),
+    
+    // ===== MEMO METHODS - Phase 2.1 =====
+    memos: {
+      // Add original memo to report
+      add: (reportId, content, phase = 'originalMemo') => {
+        console.log('[Memo API] Adding memo:', { reportId, phase });
+        return api.post(`/api/reports/${reportId}/memos`, { content, phase })
+          .then(response => {
+            console.log('[Memo API] Memo added successfully:', response.data);
+            return response;
+          })
+          .catch(error => {
+            console.error('[Memo API] Add memo failed:', error);
+            throw error;
+          });
+      },
+      
+      // Generate AI draft memo
+      generateDraft: (reportId) => {
+        console.log('[Memo API] Generating AI draft for report:', reportId);
+        return api.post(`/api/reports/${reportId}/memos/suggest`, {}, {
+          timeout: 30000 // 30 seconds for AI generation
+        })
+          .then(response => {
+            console.log('[Memo API] AI draft generated successfully:', response.data);
+            return response;
+          })
+          .catch(error => {
+            console.error('[Memo API] Generate AI draft failed:', error);
+            throw error;
+          });
+      },
+      
+      // Update memo content
+      update: (reportId, phase, content) => {
+        console.log('[Memo API] Updating memo:', { reportId, phase });
+        return api.patch(`/api/reports/${reportId}/memos/${phase}`, { content })
+          .then(response => {
+            console.log('[Memo API] Memo updated successfully:', response.data);
+            return response;
+          })
+          .catch(error => {
+            console.error('[Memo API] Update memo failed:', error);
+            throw error;
+          });
+      },
+      
+      // List all memos for a report
+      list: (reportId) => {
+        console.log('[Memo API] Fetching memos for report:', reportId);
+        return api.get(`/api/reports/${reportId}/memos`)
+          .then(response => {
+            console.log('[Memo API] Memos fetched successfully:', response.data);
+            return response;
+          })
+          .catch(error => {
+            console.error('[Memo API] Fetch memos failed:', error);
+            throw error;
+          });
+      }
+    }
   }
 };
 
