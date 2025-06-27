@@ -525,11 +525,15 @@ Please respond in English with a well-formatted memo.
         throw new Error('No memo content available. Please create at least one memo first.');
       }
 
-      // Use the most recent available memo for planning
-      const latestMemo = availableMemos.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      // Collect memos by priority order: Final Memo > AI Draft > Original Memo
+      const memosByPriority = [
+        availableMemos.find(m => m.phase === 'finalMemo'),
+        availableMemos.find(m => m.phase === 'aiDraft'),
+        availableMemos.find(m => m.phase === 'originalMemo')
+      ].filter(Boolean);
       
-      // Prepare prompt for next week planning
-      const prompt = this._prepareNextWeekPlanPrompt(report, latestMemo.content);
+      // Prepare prompt for next week planning with all available memos
+      const prompt = this._prepareNextWeekPlanPrompt(report, memosByPriority);
       
       // Generate simple next week plan (1 sentence)
       const planContent = await this._generatePlanContent(prompt);
@@ -547,23 +551,43 @@ Please respond in English with a well-formatted memo.
   /**
    * Prepare prompt for next week plan generation
    * @param {Object} report - Report object
-   * @param {string} memoContent - Available memo content
+   * @param {Array} memosByPriority - Available memos ordered by priority
    * @returns {string} Formatted prompt
    */
-  static _prepareNextWeekPlanPrompt(report, memoContent) {
+  static _prepareNextWeekPlanPrompt(report, memosByPriority) {
     const goal = report.goalId;
+    
+    // Format memo content with priority labels
+    let memoContent = '';
+    const phaseLabels = {
+      'finalMemo': 'Final Memo (HIGHEST PRIORITY)',
+      'aiDraft': 'AI Draft (MEDIUM PRIORITY)', 
+      'originalMemo': 'Original Memo (LOWEST PRIORITY)'
+    };
+    
+    memosByPriority.forEach(memo => {
+      memoContent += `\n\n${phaseLabels[memo.phase]}:\n${memo.content}`;
+    });
+    
     return `
 Based on the weekly reflection and progress analysis, generate a simple next week plan.
 
 Goal: ${goal.title}
 Current Progress Analysis: ${report.content}
-Weekly Reflection: ${memoContent}
+
+Weekly Reflections (in priority order):${memoContent}
+
+CONFLICT RESOLUTION RULES:
+- If there are conflicts between memos, prioritize Final Memo > AI Draft > Original Memo
+- If no conflicts exist, intelligently integrate insights from all available memos
+- Focus on the most actionable and specific guidance from the highest priority memo
 
 Please create a concise next week plan that:
 - Is exactly ONE sentence
 - Focuses on the most important priority for next week
 - Is specific and actionable
 - Builds on this week's progress and learnings
+- Resolves any conflicts using the priority rules above
 
 Example format: "Focus on [specific action] to improve [specific area] based on this week's [key insight]."
 

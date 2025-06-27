@@ -227,7 +227,7 @@ router.patch('/:reportId/memos/:phase', requireAuth, async (req, res) => {
     }
 
     // Validate phase
-    const validPhases = ['originalMemo', 'aiDraft', 'finalMemo'];
+    const validPhases = ['originalMemo', 'aiDraft', 'finalMemo', 'nextWeekPlan'];
     if (!validPhases.includes(phase)) {
       return res.status(400).json({
         success: false,
