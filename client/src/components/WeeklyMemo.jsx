@@ -510,7 +510,18 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
                   
                   toggleStep(index);
                 }}
-                sx={{ cursor: 'pointer' }}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    cursor: 'pointer'
+                  },
+                  '& .MuiStepLabel-labelContainer': {
+                    cursor: 'pointer'
+                  },
+                  '& .MuiStepLabel-labelContainer:hover': {
+                    cursor: 'pointer'
+                  }
+                }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="subtitle1">{phase.label}</Typography>
