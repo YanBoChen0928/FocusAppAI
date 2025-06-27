@@ -108,7 +108,7 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       
       if (!userId && !tempId) {
         console.error('[WeeklyMemo] User not authenticated');
-        alert('请先登录后再使用Weekly Memo功能');
+        alert('Please login first to use Weekly Memo feature');
         onClose();
         return;
       }
@@ -159,7 +159,11 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       }
     } catch (error) {
       console.error('[WeeklyMemo] Load memos failed:', error);
-      setError('Failed to load existing memos');
+      if (error.response?.status === 404) {
+        setError('Please generate AI Progress Analysis first');
+      } else {
+        setError('Failed to load existing memos');
+      }
     } finally {
       setLoading(false);
     }
@@ -216,7 +220,7 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       
       // Better error handling
       if (error.response?.status === 401) {
-        alert('认证失败，请重新登录');
+        alert('Authentication failed, please login again');
         // Redirect to appropriate login page
         const tempId = localStorage.getItem('tempId');
         if (tempId) {
@@ -225,9 +229,9 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
           window.location.href = '/login';
         }
       } else if (error.response?.status === 404) {
-        alert('报告未找到，请重新生成AI分析报告');
+        alert('Please generate AI Progress Analysis first');
       } else {
-        alert(`保存失败: ${error.message}`);
+        alert(`Save failed: ${error.message}`);
       }
       
       setError(error.message);
@@ -483,8 +487,12 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
   const [open, setOpen] = useState(false);
 
   const handleClick = () => {
-    if (!disabled && reportId) {
-      setOpen(true);
+    if (!disabled) {
+      if (reportId) {
+        setOpen(true);
+      } else {
+        alert('Please generate AI Progress Analysis first');
+      }
     }
   };
 
