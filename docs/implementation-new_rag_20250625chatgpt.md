@@ -97,13 +97,13 @@
  */
 async function enhancePrompt({ aiFeedback, userMemo }) {
   const prompt = `
-    AI Feedback:
-    ${aiFeedback.content}
+     AI Feedback:
+     ${aiFeedback.content}
 
-    User Memo Draft:
-    ${userMemo}
+     User Memo Draft:
+     ${userMemo}
 
-    Please generate a concise, actionable weekly reminder memo.
+     Please generate a concise, actionable weekly reminder memo.
   `;
 
   try {
