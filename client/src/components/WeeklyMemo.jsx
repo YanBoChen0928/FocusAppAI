@@ -19,7 +19,8 @@ import {
   Collapse,
   Alert,
   CircularProgress,
-  Chip
+  Chip,
+  Tooltip
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -649,34 +650,58 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
               // Expanded text box
               <Box
                 onClick={handleToggleExpanded}
-                sx={{
-                  backgroundColor: 'secondary.main',
-                  color: 'white',
-                  borderRadius: '16px',
-                  padding: '12px 16px',
-                  maxWidth: '280px',
-                  minWidth: '120px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: 'secondary.dark',
-                    transform: 'scale(1.02)',
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
-                  }
-                }}
+                                  sx={{
+                    backgroundColor: 'secondary.main',
+                    color: 'white',
+                    borderRadius: '16px',
+                    padding: {
+                      xs: '8px 12px',
+                      sm: '12px 16px'
+                    },
+                    width: 'auto',
+                    minWidth: {
+                      xs: '100px',
+                      sm: '120px'
+                    },
+                    maxWidth: {
+                      xs: '60vw',
+                      sm: '50vw',
+                      md: '40vw'
+                    },
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: 'secondary.dark',
+                      transform: 'scale(1.02)',
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                    }
+                  }}
               >
                 <Typography
                   variant="body2"
                   sx={{
                     fontWeight: 500,
                     lineHeight: 1.4,
+                    fontSize: {
+                      xs: '0.75rem',
+                      sm: '0.875rem',
+                      md: '0.875rem'
+                    },
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
-                    WebkitLineClamp: 3,
+                    WebkitLineClamp: (() => {
+                      // Calculate line count based on content length
+                      const contentLength = nextWeekContent.length;
+                      if (contentLength <= 60) return 2;
+                      if (contentLength <= 120) return 3;
+                      if (contentLength <= 180) return 4;
+                      return Math.min(Math.ceil(contentLength / 45), 6); // Max 6 lines
+                    })(),
                     WebkitBoxOrient: 'vertical',
-                    fontSize: '0.875rem'
+                    wordBreak: 'break-word',
+                    hyphens: 'auto'
                   }}
                 >
                   {nextWeekContent}
@@ -684,45 +709,67 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
               </Box>
             ) : (
               // Collapsed icon
-              <Fab
-                color="secondary"
-                size="small"
-                aria-label="next week plan"
-                onClick={handleNextWeekPlanClick}
-                disabled={disabled}
-                sx={{
-                  transform: 'scale(0.8)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    transform: 'scale(0.85)',
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
-                  }
-                }}
-              >
-                📋
-              </Fab>
+              <Tooltip title="next move" placement="top">
+                <Fab
+                  color="secondary"
+                  size="large"
+                  aria-label="next week plan"
+                  onClick={handleNextWeekPlanClick}
+                  disabled={disabled}
+                  sx={{
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    transition: 'all 0.3s ease-in-out',
+                    width: 64,
+                    height: 64,
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                    },
+                    '& .MuiFab-label': {
+                      fontSize: '2.5rem !important',
+                      lineHeight: '1 !important'
+                    },
+                    '& svg, & span': {
+                      fontSize: '2.5rem !important'
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>📋</span>
+                </Fab>
+              </Tooltip>
             )}
           </Box>
         )}
         
         {/* Main FAB - Weekly Memo */}
-        <Fab
-          color="primary"
-          aria-label="weekly memo"
-          onClick={handleClick}
-          disabled={disabled}
-          sx={{
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            transition: 'all 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'scale(1.05)',
-              boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
-            }
-          }}
-        >
-          🎯
-        </Fab>
+        <Tooltip title="Weekly Memo with Advanced AI Assistant" placement="top">
+          <Fab
+            color="primary"
+            size="large"
+            aria-label="weekly memo"
+            onClick={handleClick}
+            disabled={disabled}
+            sx={{
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              transition: 'all 0.3s ease-in-out',
+              width: 64,
+              height: 64,
+              '&:hover': {
+                transform: 'scale(1.05)',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+              },
+              '& .MuiFab-label': {
+                fontSize: '2.5rem !important',
+                lineHeight: '1 !important'
+              },
+              '& svg, & span': {
+                fontSize: '2.5rem !important'
+              }
+            }}
+          >
+            <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>🎯</span>
+          </Fab>
+        </Tooltip>
       </Box>
       
       {open && (

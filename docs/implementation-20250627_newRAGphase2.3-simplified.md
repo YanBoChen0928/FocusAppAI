@@ -289,7 +289,6 @@ Next Week Plan的AI生成邏輯是否已在後端準備好？
 DnD功能是否在Phase 2.3實施，還是後續版本？
 
 # phase 2.3 modification
-Phase 3: Authorization Gate
 Step 3.1 - 計劃的具體變更：
 後端變更 (ReportService.js)：
 添加generateNextWeekPlan(reportId)方法
