@@ -364,4 +364,63 @@ router.get('/:reportId/memos', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * @route   POST /api/reports/:reportId/memos/next-week-plan
+ * @desc    Generate Next Week Plan based on available memo content
+ * @access  Private
+ */
+router.post('/:reportId/memos/next-week-plan', requireAuth, async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    // Fix: Support both registered and temp users
+    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+
+    console.log('[NextWeekPlan API] Generate request:', { reportId, userId, userType: req.user.userType });
+
+    // Verify report ownership
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        error: 'Report not found'
+      });
+    }
+
+    if (String(report.userId) !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: You can only generate plans for your own reports'
+      });
+    }
+
+    // Generate Next Week Plan
+    const result = await ReportService.generateNextWeekPlan(reportId);
+
+    res.json({
+      success: true,
+      data: {
+        reportId,
+        content: result.content,
+        message: 'Next Week Plan generated successfully'
+      }
+    });
+
+  } catch (error) {
+    console.error('[NextWeekPlan API] Generate failed:', error);
+    
+    // Handle specific error cases
+    if (error.message.includes('No memo content available')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please create at least one memo first before generating Next Week Plan'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate Next Week Plan'
+    });
+  }
+});
+
 export default router;

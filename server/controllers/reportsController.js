@@ -349,3 +349,131 @@ const formatAIResponse = (rawContent) => {
   // Fallback to default structure
   return defaultStructure;
 };
+
+// ===== MEMO CONTROLLERS - Phase 2.1 =====
+
+/**
+ * Add memo to report
+ */
+export const addMemo = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { content, phase } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Memo content is required' }
+      });
+    }
+
+    const report = await ReportService.addMemo(reportId, content.trim(), phase);
+
+    res.status(200).json({
+      success: true,
+      data: { report }
+    });
+  } catch (error) {
+    console.error('[Controller] Add memo failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * Generate AI draft memo
+ */
+export const generateAiDraft = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    const result = await ReportService.generateAiDraft(reportId);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('[Controller] Generate AI draft failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * Update memo content
+ */
+export const updateMemo = async (req, res) => {
+  try {
+    const { reportId, phase } = req.params;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Memo content is required' }
+      });
+    }
+
+    const report = await ReportService.updateMemo(reportId, phase, content.trim());
+
+    res.status(200).json({
+      success: true,
+      data: { report }
+    });
+  } catch (error) {
+    console.error('[Controller] Update memo failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * List all memos for a report
+ */
+export const listMemos = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    const memos = await ReportService.listMemos(reportId);
+
+    res.status(200).json({
+      success: true,
+      data: { memos }
+    });
+  } catch (error) {
+    console.error('[Controller] List memos failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * Generate Next Week Plan - Phase 2.3
+ */
+export const generateNextWeekPlan = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    const result = await ReportService.generateNextWeekPlan(reportId);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('[Controller] Generate Next Week Plan failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};

@@ -39,7 +39,8 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
   const [memos, setMemos] = useState({
     originalMemo: { content: '', timestamp: null },
     aiDraft: { content: '', timestamp: null },
-    finalMemo: { content: '', timestamp: null }
+    finalMemo: { content: '', timestamp: null },
+    nextWeekPlan: { content: '', timestamp: null }
   });
   const [editingPhase, setEditingPhase] = useState(null);
   const [tempContent, setTempContent] = useState('');
@@ -70,6 +71,13 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       description: 'Edit and finalize your weekly memo',
       icon: <CheckCircleIcon />,
       placeholder: 'Refine your memo to create the final version...'
+    },
+    {
+      key: 'nextWeekPlan',
+      label: 'Next Week Planning',
+      description: 'Plan your priorities for the upcoming week',
+      icon: <ScheduleIcon />,
+      placeholder: 'AI will generate a focused plan for next week...'
     }
   ];
 
@@ -96,6 +104,8 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       setExpandedSteps(prev => new Set([...prev, 1])); // Auto-expand AI Draft step
     } else if (currentPhase === 'aiDraft') {
       setExpandedSteps(prev => new Set([...prev, 2])); // Auto-expand Final Memo step
+    } else if (currentPhase === 'finalMemo') {
+      setExpandedSteps(prev => new Set([...prev, 3])); // Auto-expand Next Week Plan step
     }
   };
 
@@ -154,6 +164,9 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
         }
         if (updatedMemos.aiDraft.content) {
           expandedSet.add(2); // Show final memo step if AI draft exists
+        }
+        if (updatedMemos.finalMemo.content) {
+          expandedSet.add(3); // Show next week plan step if final memo exists
         }
         setExpandedSteps(expandedSet);
       }
@@ -273,6 +286,40 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
     }
   };
 
+  // Handle Next Week Plan generation
+  const handleGenerateNextWeekPlan = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Check if any of the first 3 phases have content
+      const hasAnyMemo = memos.originalMemo.content || memos.aiDraft.content || memos.finalMemo.content;
+      if (!hasAnyMemo) {
+        setError('Please create at least one memo first');
+        return;
+      }
+      
+      const response = await apiService.reports.memos.generateNextWeekPlan(reportId);
+      
+      if (response.data.success) {
+        setMemos(prev => ({
+          ...prev,
+          nextWeekPlan: {
+            content: response.data.data.content,
+            timestamp: new Date().toISOString()
+          }
+        }));
+        
+        setSuccess('Next week plan generated successfully!');
+      }
+    } catch (error) {
+      console.error('[WeeklyMemo] Generate next week plan failed:', error);
+      setError(error.response?.data?.error || 'Failed to generate next week plan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle edit mode
   const handleEdit = (phase) => {
     setEditingPhase(phase);
@@ -380,6 +427,16 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
                   >
                     Generate AI Draft
                   </Button>
+                ) : phase === 'nextWeekPlan' ? (
+                  <Button
+                    variant="contained"
+                    onClick={handleGenerateNextWeekPlan}
+                    disabled={loading || !(memos.originalMemo.content || memos.aiDraft.content || memos.finalMemo.content)}
+                    startIcon={loading ? <CircularProgress size={16} /> : <ScheduleIcon />}
+                    sx={{ mb: 2 }}
+                  >
+                    Generate Next Week Plan
+                  </Button>
                 ) : (
                   <Button
                     variant="outlined"
@@ -445,6 +502,12 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
                 onClick={(e) => {
                   console.log(`[WeeklyMemo] StepLabel clicked - Step ${index} (${phase.label})`);
                   console.log('[WeeklyMemo] Event details:', e.target);
+                  
+                  // Auto-generate next week plan when clicked if not exists
+                  if (phase.key === 'nextWeekPlan' && !memos.nextWeekPlan.content) {
+                    handleGenerateNextWeekPlan();
+                  }
+                  
                   toggleStep(index);
                 }}
                 sx={{ cursor: 'pointer' }}
@@ -485,6 +548,28 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
 // Floating Action Button Component
 export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
   const [open, setOpen] = useState(false);
+  const [hasNextWeekPlan, setHasNextWeekPlan] = useState(false);
+
+  // Check if Next Week Plan exists
+  useEffect(() => {
+    const checkNextWeekPlan = async () => {
+      if (reportId) {
+        try {
+          const response = await apiService.reports.memos.list(reportId);
+          if (response.data.success) {
+            const nextWeekPlanExists = response.data.data.memos.some(memo => 
+              memo.phase === 'nextWeekPlan' && memo.content
+            );
+            setHasNextWeekPlan(nextWeekPlanExists);
+          }
+        } catch (error) {
+          console.error('[WeeklyMemoFab] Failed to check Next Week Plan:', error);
+        }
+      }
+    };
+
+    checkNextWeekPlan();
+  }, [reportId]);
 
   const handleClick = () => {
     if (!disabled) {
@@ -496,8 +581,16 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
     }
   };
 
+  const handleNextWeekPlanClick = () => {
+    if (!disabled && reportId) {
+      setOpen(true);
+      // Will auto-expand to Next Week Plan step
+    }
+  };
+
   return (
     <>
+      {/* Main FAB - Weekly Memo */}
       <Fab
         color="primary"
         aria-label="weekly memo"
@@ -512,6 +605,26 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
       >
         🎯
       </Fab>
+      
+      {/* Secondary FAB - Next Week Plan (show when plan exists) */}
+      {hasNextWeekPlan && (
+        <Fab
+          color="secondary"
+          size="small"
+          aria-label="next week plan"
+          onClick={handleNextWeekPlanClick}
+          disabled={disabled}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 88, // Left side of main FAB
+            zIndex: 1000,
+            transform: 'scale(0.8)'
+          }}
+        >
+          📋
+        </Fab>
+      )}
       
       {open && (
         <WeeklyMemo

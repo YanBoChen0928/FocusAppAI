@@ -242,3 +242,67 @@ const WeeklyMemo = () => {
 
 **🎯 下一步決策**: 
 您是否希望我開始實施Phase 2.3的Next Week Planning功能，實現完整的4階段工作流和一體化顯示？
+
+
+# Brief:
+用戶流程：
+1. 點擊🎯主FAB → 打開WeeklyMemo對話框
+2. 在對話框中看到4個階段的Stepper
+3. 完成前3階段後，可以生成Next Week Plan
+4. 如果已有Next Week Plan，會顯示📋副FAB
+5. 點擊📋副FAB → 快速查看/編輯Next Week Plan
+
+# waiting for check
+ 具體實施計劃
+修改範圍確認：
+WeeklyMemo.jsx：
+擴展phases數組添加nextWeekPlan
+添加Next Week Planning的渲染邏輯
+實現generateNextWeekPlan API調用
+擴展FAB組件支持副FAB顯示
+新增功能：
+Next Week Planning內容生成和編輯
+副FAB按鈕的條件顯示
+DnD拖曳支持（未來擴展）
+UI流程確認：
+Apply to implementati...
+技術實施重點：
+保持向後兼容：現有3階段功能不受影響
+漸進式啟用：只有在適當時機才顯示第4階段
+統一體驗：與現有Stepper設計保持一致
+性能優化：避免不必要的重渲染
+📋 我的理解總結
+✅ 確認的功能範圍：
+第4階段UI：NextWeekPlanningSection
+FAB擴展：主FAB + 條件顯示的副FAB
+4階段工作流：完整的memo→draft→final→plan流程
+一體化顯示：在同一Dialog中統一展示
+DnD準備：為未來拖曳功能預留架構
+✅ UI定位策略：
+主FAB：右下角固定（保持現有）
+副FAB：視窗範圍內左側/右側顯示
+拖曳範圍：類似feedback-popover的視窗內拖曳
+顯示邏輯：hasNextWeekPlan為true時才顯示副FAB
+🤔 需要確認的技術細節：
+Next Week Plan的AI生成邏輯是否已在後端準備好？
+副FAB的預設位置偏好（左側 vs 右側）？
+DnD功能是否在Phase 2.3實施，還是後續版本？
+
+# phase 2.3 modification
+Phase 3: Authorization Gate
+Step 3.1 - 計劃的具體變更：
+後端變更 (ReportService.js)：
+添加generateNextWeekPlan(reportId)方法
+添加_prepareNextWeekPlanPrompt(report, finalMemo)輔助方法
+整合RAG增強的下週計劃生成邏輯
+前端變更 (WeeklyMemo.jsx)：
+擴展phases數組添加第4階段
+添加Next Week Plan生成和編輯邏輯
+修改WeeklyMemoFab組件支持副FAB顯示
+保持副FAB在主FAB左側位置
+技術實施策略：
+後端優先：先實施API邏輯確保數據層支持
+最小化修改：基於現有memo邏輯擴展，避免重複代碼
+向後兼容：確保現有3階段功能不受影響
+Step 3.2 - MANDATORY QUESTION: "Do you authorize me to proceed with these specific changes?"
+Step 3.3 - 等待明確的"YES"確認後開始實施

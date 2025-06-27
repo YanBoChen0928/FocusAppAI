@@ -505,6 +505,102 @@ Please respond in English with a well-formatted memo.
   }
 
   /**
+   * Generate next week plan based on available memo content
+   * @param {string} reportId - Report ID
+   * @returns {Object} AI-generated next week plan content
+   */
+  static async generateNextWeekPlan(reportId) {
+    try {
+      const report = await Report.findById(reportId).populate('goalId');
+      if (!report) {
+        throw new Error('Report not found');
+      }
+
+      // Get available memo content (any of the first 3 phases)
+      const availableMemos = report.memos.filter(m => 
+        ['originalMemo', 'aiDraft', 'finalMemo'].includes(m.phase) && m.content
+      );
+      
+      if (availableMemos.length === 0) {
+        throw new Error('No memo content available. Please create at least one memo first.');
+      }
+
+      // Use the most recent available memo for planning
+      const latestMemo = availableMemos.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+      
+      // Prepare prompt for next week planning
+      const prompt = this._prepareNextWeekPlanPrompt(report, latestMemo.content);
+      
+      // Generate simple next week plan (1 sentence)
+      const planContent = await this._generatePlanContent(prompt);
+      
+      // Add next week plan to report
+      await this.addMemo(reportId, planContent, 'nextWeekPlan');
+
+      return { content: planContent };
+    } catch (error) {
+      console.error('[NextWeekPlan] Generate failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Prepare prompt for next week plan generation
+   * @param {Object} report - Report object
+   * @param {string} memoContent - Available memo content
+   * @returns {string} Formatted prompt
+   */
+  static _prepareNextWeekPlanPrompt(report, memoContent) {
+    const goal = report.goalId;
+    return `
+Based on the weekly reflection and progress analysis, generate a simple next week plan.
+
+Goal: ${goal.title}
+Current Progress Analysis: ${report.content}
+Weekly Reflection: ${memoContent}
+
+Please create a concise next week plan that:
+- Is exactly ONE sentence
+- Focuses on the most important priority for next week
+- Is specific and actionable
+- Builds on this week's progress and learnings
+
+Example format: "Focus on [specific action] to improve [specific area] based on this week's [key insight]."
+
+Generate only the plan sentence, no additional text.
+    `.trim();
+  }
+
+  /**
+   * Generate plan content using AI (optimized for short responses)
+   * @param {string} prompt - Generation prompt
+   * @returns {string} Generated plan content
+   */
+  static async _generatePlanContent(prompt) {
+    try {
+      console.time('[NextWeekPlan] Content generation');
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a concise planning assistant. Generate exactly one actionable sentence for next week planning." 
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.6,
+        max_tokens: 100
+      });
+      console.timeEnd('[NextWeekPlan] Content generation');
+
+      return completion.choices[0].message.content.trim();
+    } catch (error) {
+      console.error('[NextWeekPlan] Content generation failed:', error);
+      throw new Error('Next week plan generation failed, please try again later');
+    }
+  }
+
+  /**
    * Generate memo content using AI
    * @param {string} prompt - Generation prompt
    * @param {boolean} useAdvancedModel - Whether to use gpt-o4-mini

@@ -538,6 +538,22 @@ const apiService = {
             console.error('[Memo API] Fetch memos failed:', error);
             throw error;
           });
+      },
+      
+      // Generate Next Week Plan
+      generateNextWeekPlan: (reportId) => {
+        console.log('[Memo API] Generating Next Week Plan for report:', reportId);
+        return api.post(`/api/reports/${reportId}/memos/next-week-plan`, {}, {
+          timeout: 30000 // 30 seconds for AI generation
+        })
+          .then(response => {
+            console.log('[Memo API] Next Week Plan generated successfully:', response.data);
+            return response;
+          })
+          .catch(error => {
+            console.error('[Memo API] Generate Next Week Plan failed:', error);
+            throw error;
+          });
       }
     }
   }
