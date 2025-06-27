@@ -560,21 +560,35 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
 export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
   const [open, setOpen] = useState(false);
   const [hasNextWeekPlan, setHasNextWeekPlan] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [nextWeekContent, setNextWeekContent] = useState('');
 
-  // Check if Next Week Plan exists
+  // Check if Next Week Plan exists and get content
   useEffect(() => {
     const checkNextWeekPlan = async () => {
       if (reportId) {
         try {
           const response = await apiService.reports.memos.list(reportId);
           if (response.data.success) {
-            const nextWeekPlanExists = response.data.data.memos.some(memo => 
+            const nextWeekPlan = response.data.data.memos.find(memo => 
               memo.phase === 'nextWeekPlan' && memo.content
             );
-            setHasNextWeekPlan(nextWeekPlanExists);
+            
+            if (nextWeekPlan) {
+              setHasNextWeekPlan(true);
+              setNextWeekContent(nextWeekPlan.content);
+              setExpanded(true); // Auto-expand when content exists
+            } else {
+              setHasNextWeekPlan(false);
+              setNextWeekContent('');
+              setExpanded(false); // Show icon when no content
+            }
           }
         } catch (error) {
           console.error('[WeeklyMemoFab] Failed to check Next Week Plan:', error);
+          setHasNextWeekPlan(false);
+          setNextWeekContent('');
+          setExpanded(false);
         }
       }
     };
@@ -594,48 +608,122 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
 
   const handleNextWeekPlanClick = () => {
     if (!disabled && reportId) {
-      setOpen(true);
-      // Will auto-expand to Next Week Plan step
+      if (expanded) {
+        // If expanded, just open the dialog
+        setOpen(true);
+      } else {
+        // If collapsed, toggle to expanded state
+        setExpanded(true);
+      }
     }
+  };
+
+  const handleToggleExpanded = () => {
+    setExpanded(!expanded);
   };
 
   return (
     <>
-      {/* Main FAB - Weekly Memo */}
-      <Fab
-        color="primary"
-        aria-label="weekly memo"
-        onClick={handleClick}
-        disabled={disabled}
+      {/* FAB Container */}
+      <Box
         sx={{
           position: 'fixed',
           bottom: 24,
           right: 24,
-          zIndex: 1000
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
         }}
       >
-        🎯
-      </Fab>
-      
-      {/* Secondary FAB - Next Week Plan (show when plan exists) */}
-      {hasNextWeekPlan && (
+        {/* Secondary FAB - Next Week Plan */}
+        {hasNextWeekPlan && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'all 0.3s ease-in-out'
+            }}
+          >
+            {expanded ? (
+              // Expanded text box
+              <Box
+                onClick={handleToggleExpanded}
+                sx={{
+                  backgroundColor: 'secondary.main',
+                  color: 'white',
+                  borderRadius: '16px',
+                  padding: '12px 16px',
+                  maxWidth: '280px',
+                  minWidth: '120px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'secondary.dark',
+                    transform: 'scale(1.02)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                  }
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  {nextWeekContent}
+                </Typography>
+              </Box>
+            ) : (
+              // Collapsed icon
+              <Fab
+                color="secondary"
+                size="small"
+                aria-label="next week plan"
+                onClick={handleNextWeekPlanClick}
+                disabled={disabled}
+                sx={{
+                  transform: 'scale(0.8)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'scale(0.85)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                  }
+                }}
+              >
+                📋
+              </Fab>
+            )}
+          </Box>
+        )}
+        
+        {/* Main FAB - Weekly Memo */}
         <Fab
-          color="secondary"
-          size="small"
-          aria-label="next week plan"
-          onClick={handleNextWeekPlanClick}
+          color="primary"
+          aria-label="weekly memo"
+          onClick={handleClick}
           disabled={disabled}
           sx={{
-            position: 'fixed',
-            bottom: 24,
-            right: 88, // Left side of main FAB
-            zIndex: 1000,
-            transform: 'scale(0.8)'
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.05)',
+              boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+            }
           }}
         >
-          📋
+          🎯
         </Fab>
-      )}
+      </Box>
       
       {open && (
         <WeeklyMemo
