@@ -51,3 +51,59 @@ const WeeklyMemo = ({ reportId }) => {
     </div>
   );
 };
+
+# Backend Test (use Postman)
+
+# 1. 测试AI Draft生成
+POST http://localhost:3000/api/reports/{reportId}/memos/suggest
+Authorization: Bearer {your-token}
+Content-Type: application/json
+{
+  "content": "This week I focused on learning React hooks..."
+}
+
+# 2. 测试Memo更新
+PATCH http://localhost:3000/api/reports/{reportId}/memos/{memoId}
+Authorization: Bearer {your-token}
+Content-Type: application/json
+{
+  "content": "Updated memo content..."
+}
+
+# 3. 测试Memo列表
+GET http://localhost:3000/api/reports/{reportId}/memos
+Authorization: Bearer {your-token}
+
+
+# Frontend test step
+# 启动开发服务器
+cd client
+npm start
+
+# 测试流程：
+# 1. 导航到有AI Feedback的Goal页面
+# 2. 创建Weekly Memo
+# 3. 输入original memo
+# 4. 点击"Get AI Help"
+# 5. 验证AI suggestion显示
+# 6. 点击"Accept"或"Regenerate"
+# 7. 编辑final memo
+# 8. 保存final memo
+
+# MongoDB test
+# 连接MongoDB检查数据
+mongosh "your-connection-string"
+use FocusFinalProject
+db.reports.findOne({_id: ObjectId("your-report-id")})
+# 验证memos数组和embedding字段
+
+# 2025.06.26
+
+🎯 测试建议：
+现在您应该能看到floating action button了！请按以下步骤验证：
+重启客户端（如果还在运行）
+导航到有AI Progress Analysis的Goal页面
+点击"Generate"按钮生成分析报告
+查看是否出现🎯 floating action button（应该在右下角）
+点击测试WeeklyMemo功能
+如果仍然看不到，请告诉我，我们可以进行进一步的调试！
