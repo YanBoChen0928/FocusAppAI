@@ -35,7 +35,7 @@ import apiService from '../services/api';
 
 const WeeklyMemo = ({ reportId, onClose, open }) => {
   // State management
-  const [activeStep, setActiveStep] = useState(0);
+  const [expandedSteps, setExpandedSteps] = useState(new Set([0]));
   const [memos, setMemos] = useState({
     originalMemo: { content: '', timestamp: null },
     aiDraft: { content: '', timestamp: null },
@@ -72,6 +72,32 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       placeholder: 'Refine your memo to create the final version...'
     }
   ];
+
+  // Toggle step expansion
+  const toggleStep = (index) => {
+    console.log('[WeeklyMemo] Toggle step clicked:', { index, currentExpanded: Array.from(expandedSteps) });
+    setExpandedSteps(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+        console.log('[WeeklyMemo] Collapsing step:', index);
+      } else {
+        newSet.add(index);
+        console.log('[WeeklyMemo] Expanding step:', index);
+      }
+      console.log('[WeeklyMemo] New expanded steps:', Array.from(newSet));
+      return newSet;
+    });
+  };
+
+  // Auto-expand next step when memo is saved
+  const autoExpandNextStep = (currentPhase) => {
+    if (currentPhase === 'originalMemo') {
+      setExpandedSteps(prev => new Set([...prev, 1])); // Auto-expand AI Draft step
+    } else if (currentPhase === 'aiDraft') {
+      setExpandedSteps(prev => new Set([...prev, 2])); // Auto-expand Final Memo step
+    }
+  };
 
   // Add authentication check
   useEffect(() => {
@@ -121,16 +147,15 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
         
         setMemos(updatedMemos);
         
-        // Set active step based on progress
-        if (updatedMemos.finalMemo.content) {
-          setActiveStep(2);
-        } else if (updatedMemos.aiDraft.content) {
-          setActiveStep(2);
-        } else if (updatedMemos.originalMemo.content) {
-          setActiveStep(1);
-        } else {
-          setActiveStep(0);
+        // Set expanded steps based on progress
+        const expandedSet = new Set([0]); // Always show original memo step
+        if (updatedMemos.originalMemo.content) {
+          expandedSet.add(1); // Show AI draft step if original exists
         }
+        if (updatedMemos.aiDraft.content) {
+          expandedSet.add(2); // Show final memo step if AI draft exists
+        }
+        setExpandedSteps(expandedSet);
       }
     } catch (error) {
       console.error('[WeeklyMemo] Load memos failed:', error);
@@ -184,11 +209,7 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
         setEditingPhase(null);
         
         // Auto-advance to next step
-        if (phase === 'originalMemo') {
-          setActiveStep(1);
-        } else if (phase === 'finalMemo') {
-          setActiveStep(2);
-        }
+        autoExpandNextStep(phase);
       }
     } catch (error) {
       console.error('[WeeklyMemo] Save memo failed:', error);
@@ -238,7 +259,7 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
         }));
         
         setSuccess('AI draft generated successfully!');
-        setActiveStep(2);
+        autoExpandNextStep('aiDraft');
       }
     } catch (error) {
       console.error('[WeeklyMemo] Generate AI draft failed:', error);
@@ -406,12 +427,22 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
         )}
         
         {/* Progress Stepper */}
-        <Stepper activeStep={activeStep} orientation="vertical">
-          {phases.map((phase, index) => (
-            <Step key={phase.key}>
+        <Stepper orientation="vertical">
+          {phases.map((phase, index) => {
+            console.log(`[WeeklyMemo] Rendering step ${index}: ${phase.label}`, { 
+              key: phase.key, 
+              expanded: expandedSteps.has(index),
+              memoContent: !!memos[phase.key].content 
+            });
+            return (
+            <Step key={phase.key} completed={false} expanded={expandedSteps.has(index)}>
               <StepLabel
                 icon={phase.icon}
-                onClick={() => setActiveStep(index)}
+                onClick={(e) => {
+                  console.log(`[WeeklyMemo] StepLabel clicked - Step ${index} (${phase.label})`);
+                  console.log('[WeeklyMemo] Event details:', e.target);
+                  toggleStep(index);
+                }}
                 sx={{ cursor: 'pointer' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -430,10 +461,11 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   {phase.description}
                 </Typography>
-                {renderMemoContent(phase.key)}
+                {expandedSteps.has(index) && renderMemoContent(phase.key)}
               </StepContent>
             </Step>
-          ))}
+            );
+          })}
         </Stepper>
       </DialogContent>
       
