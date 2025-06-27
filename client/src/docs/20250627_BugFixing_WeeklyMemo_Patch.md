@@ -214,3 +214,97 @@ const toggleStep = (index) => {
 4. 检查浏览器控制台的调试日志，确认点击事件被正确触发
 
 如果仍有问题，请检查浏览器控制台的调试日志，这将帮助我们进一步诊断问题！
+
+---
+
+## Bug修复 #2: WeeklyMemo步骤点击展开/收起问题
+
+### Phase 1: Initial Assessment
+
+**Step 1.1** - 重新分析用户反馈的问题
+**Step 1.2** - 问题重新定义：AI Draft和Final Memo步骤无法通过点击来展开/收起
+**Step 1.3** - 理解确认：用户期望能够通过点击StepLabel来切换步骤的展开状态
+**Step 1.4** - 确认不涉及CSS或样式修改，纯功能问题
+
+### Phase 2: Planning & Analysis
+
+**Step 2.1** - 问题诊断清单：
+- [x] 检查控制台日志 - toggleStep函数正常执行
+- [x] 检查状态更新 - expandedSteps正确更新
+- [x] 检查UI渲染 - 发现MUI Step组件缺少expanded属性
+- [x] 分析MUI文档 - StepContent需要Step.expanded控制展开状态
+
+**Step 2.2** - 根本原因分析：
+- **问题根因**：MUI Stepper组件架构理解错误
+- **错误理解**：以为只需要用`expandedSteps.has(index)`控制内容渲染
+- **正确理解**：MUI的StepContent需要Step组件的`expanded`属性来控制展开/收起动画和状态
+
+### Phase 3: Authorization Gate
+
+**Step 3.1** - 计划修改：在Step组件中添加`expanded={expandedSteps.has(index)}`属性
+**Step 3.2** - 获得用户明确授权
+**Step 3.3** - 开始实施修改
+
+### Phase 4: Implementation
+
+**Step 4.1** - 修改MUI Step组件，添加expanded属性同步
+
+#### 修改详情
+```javascript
+// 修改前
+<Step key={phase.key} completed={false}>
+
+// 修改后  
+<Step key={phase.key} completed={false} expanded={expandedSteps.has(index)}>
+```
+
+#### 技术说明
+1. **MUI组件架构**：
+   - `Step.expanded` → 控制StepContent的展开动画和DOM状态
+   - `expandedSteps.has(index)` → 控制实际内容的条件渲染
+   - 两者必须配合使用才能实现完整功能
+
+2. **为什么需要双重控制**：
+   ```javascript
+   <Step expanded={expandedSteps.has(index)}>  // 控制展开动画
+     <StepContent>
+       {expandedSteps.has(index) && renderMemoContent(phase.key)}  // 控制内容渲染
+     </StepContent>
+   </Step>
+   ```
+
+### Phase 5: Documentation & Reporting
+
+#### 修改的文件列表
+- `focus-app/client/src/components/WeeklyMemo.jsx`
+
+#### 更改摘要
+修复了AI Draft和Final Memo步骤无法点击展开/收起的问题，通过添加MUI Step组件的`expanded`属性解决了StepContent展开状态控制问题。
+
+#### 简要说明
+问题根源是对MUI Stepper组件架构的理解不够深入。MUI的StepContent组件需要通过父级Step组件的`expanded`属性来控制展开/收起状态，而不是仅仅依赖内部的条件渲染。
+
+#### 修改部分的详细功能说明
+
+**🔧 核心修复**：
+```javascript
+<Step key={phase.key} completed={false} expanded={expandedSteps.has(index)}>
+```
+
+**📋 解决的问题**：
+- ✅ **Original Memo点击**：继续正常工作
+- ✅ **AI Draft点击**：现在可以正确展开/收起
+- ✅ **Final Memo点击**：现在可以正确展开/收起
+- ✅ **状态同步**：UI展开状态与内部state完全同步
+
+**🎯 技术学习要点**：
+1. **MUI组件理解**：需要同时控制组件的`expanded`属性和内容渲染
+2. **调试技巧**：控制台日志显示逻辑正确，但UI不响应时，检查UI组件的属性配置
+3. **问题诊断**：从"函数执行了但UI不变"→"检查UI组件属性"→"发现MUI expanded缺失"
+
+**💡 未来改进建议**：
+- 初次使用新UI框架时，仔细阅读组件文档的所有必需属性
+- 使用React DevTools检查组件的props传递情况
+- 对于复合组件（如Stepper+Step+StepContent），确保理解完整的数据流
+
+**🎉 测试结果**：所有三个步骤现在都能正确响应点击事件进行展开/收起操作！
