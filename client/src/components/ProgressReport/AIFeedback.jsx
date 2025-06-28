@@ -695,7 +695,10 @@ export default function AIFeedback({ goalId }) {
                         <div 
                           {...dragAttributes} 
                           {...dragListeners}
-                          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                          style={{ 
+                            cursor: isDragging ? 'grabbing' : 'grab',
+                            color: '#333'
+                          }}
                         >
                           {currentPopoverTitle}
                         </div>
@@ -720,7 +723,7 @@ export default function AIFeedback({ goalId }) {
                       sx={{ 
                         py: 1,
                         px: 2,
-                        backgroundColor: '#f8f8f8',
+                        backgroundColor: '#e8e8e8',
                         borderBottom: '1px solid #eee',
                         '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
                         width: '100%',
