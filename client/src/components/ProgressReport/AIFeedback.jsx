@@ -677,7 +677,7 @@ export default function AIFeedback({ goalId }) {
                     elevation: 0,
                     sx: {
                       borderRadius: '14px',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.15)',
                       overflow: 'hidden'
                     }
                   }}
