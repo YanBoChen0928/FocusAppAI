@@ -32,6 +32,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Schedule as ScheduleIcon
 } from '@mui/icons-material';
+import { DndContext, useDraggable, useSensor, PointerSensor } from '@dnd-kit/core';
 import apiService from '../services/api';
 
 const WeeklyMemo = ({ reportId, onClose, open }) => {
@@ -558,11 +559,84 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
 };
 
 // Floating Action Button Component
+// DraggableFabContainer component for DND functionality
+function DraggableFabContainer({ 
+  children, 
+  isDragging, 
+  setIsDragging, 
+  dragPosition, 
+  setDragPosition 
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: 'weekly-memo-fab-container',
+    data: {
+      type: 'fab-container'
+    }
+  });
+
+  const style = {
+    position: 'fixed',
+    bottom: 24,
+    right: 24,
+    zIndex: 1000,
+    transform: isDragging && transform ? 
+      `translate(${dragPosition.x + transform.x}px, ${dragPosition.y + transform.y}px)` :
+      `translate(${dragPosition.x}px, ${dragPosition.y}px)`,
+    touchAction: 'none',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+    userSelect: 'none' // Prevent text selection during drag
+  };
+
+  return children?.({
+    ref: setNodeRef,
+    style,
+    dragAttributes: attributes ?? {},
+    dragListeners: listeners ?? {},
+    isDragging
+  });
+}
+
 export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
   const [open, setOpen] = useState(false);
   const [hasNextWeekPlan, setHasNextWeekPlan] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [nextWeekContent, setNextWeekContent] = useState('');
+  
+  // DND state management
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+
+  // DND sensors
+  const sensors = [useSensor(PointerSensor)];
+
+  // DND event handlers
+  const handleDragStart = (event) => {
+    console.log('[WeeklyMemoFab] Drag start:', event);
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = (event) => {
+    console.log('[WeeklyMemoFab] Drag end:', event);
+    setIsDragging(false);
+    
+    if (event.delta) {
+      const { x, y } = dragPosition;
+      setDragPosition({
+        x: x + event.delta.x,
+        y: y + event.delta.y
+      });
+    }
+  };
+
+  // Reset position when FAB is closed
+  const handleFabClose = () => {
+    setOpen(false);
+    // Optionally reset position when closing
+    // setDragPosition({ x: 0, y: 0 });
+  };
 
   // Check if Next Week Plan exists and get content
   useEffect(() => {
@@ -597,7 +671,7 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
     checkNextWeekPlan();
   }, [reportId]);
 
-  const handleClick = () => {
+  const handleMainFabClick = () => {
     if (!disabled) {
       if (reportId) {
         setOpen(true);
@@ -625,96 +699,141 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
 
   return (
     <>
-      {/* FAB Container */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}
+      {/* DND Context for FAB Container */}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        {/* Secondary FAB - Next Week Plan */}
-        {hasNextWeekPlan && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'all 0.3s ease-in-out'
-            }}
-          >
-            {expanded ? (
-              // Expanded text box
-              <Box
-                onClick={handleToggleExpanded}
-                                  sx={{
-                    backgroundColor: 'secondary.main',
-                    color: 'white',
-                    borderRadius: '16px',
-                    padding: {
-                      xs: '8px 12px',
-                      sm: '12px 16px'
-                    },
-                    width: 'auto',
-                    minWidth: {
-                      xs: '100px',
-                      sm: '120px'
-                    },
-                    maxWidth: {
-                      xs: '60vw',
-                      sm: '50vw',
-                      md: '40vw'
-                    },
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    transition: 'all 0.3s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: 'secondary.dark',
-                      transform: 'scale(1.02)',
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
-                    }
-                  }}
-              >
-                <Typography
-                  variant="body2"
+        <DraggableFabContainer
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
+          dragPosition={dragPosition}
+          setDragPosition={setDragPosition}
+        >
+          {({ ref, style, dragAttributes, dragListeners, isDragging: dragging }) => (
+            <Box
+              ref={ref}
+              style={style}
+              {...dragAttributes}
+              {...dragListeners}
+              sx={{
+                opacity: dragging ? 0.8 : 1,
+                transition: dragging ? 'none' : 'all 0.3s ease-in-out'
+              }}
+            >
+              {/* Secondary FAB - Next Week Plan */}
+              {hasNextWeekPlan && (
+                <Box
                   sx={{
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    fontSize: {
-                      xs: '0.75rem',
-                      sm: '0.875rem',
-                      md: '0.875rem'
-                    },
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: (() => {
-                      // Calculate line count based on content length
-                      const contentLength = nextWeekContent.length;
-                      if (contentLength <= 60) return 2;
-                      if (contentLength <= 120) return 3;
-                      if (contentLength <= 180) return 4;
-                      return Math.min(Math.ceil(contentLength / 45), 6); // Max 6 lines
-                    })(),
-                    WebkitBoxOrient: 'vertical',
-                    wordBreak: 'break-word',
-                    hyphens: 'auto'
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'all 0.3s ease-in-out',
+                    marginRight: 1
                   }}
                 >
-                  {nextWeekContent}
-                </Typography>
-              </Box>
-            ) : (
-              // Collapsed icon
-              <Tooltip title="next move" placement="top">
+                  {expanded ? (
+                    // Expanded text box
+                    <Box
+                      onClick={handleToggleExpanded}
+                      sx={{
+                        backgroundColor: 'secondary.main',
+                        color: 'white',
+                        borderRadius: '16px',
+                        padding: {
+                          xs: '8px 12px',
+                          sm: '12px 16px'
+                        },
+                        width: 'auto',
+                        minWidth: {
+                          xs: '100px',
+                          sm: '120px'
+                        },
+                        maxWidth: {
+                          xs: '60vw',
+                          sm: '50vw',
+                          md: '40vw'
+                        },
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        transition: 'all 0.3s ease-in-out',
+                        '&:hover': {
+                          backgroundColor: 'secondary.dark',
+                          transform: 'scale(1.02)',
+                          boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                        }
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 500,
+                          lineHeight: 1.4,
+                          fontSize: {
+                            xs: '0.75rem',
+                            sm: '0.875rem',
+                            md: '0.875rem'
+                          },
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: (() => {
+                            // Calculate line count based on content length
+                            const contentLength = nextWeekContent.length;
+                            if (contentLength <= 60) return 2;
+                            if (contentLength <= 120) return 3;
+                            if (contentLength <= 180) return 4;
+                            return Math.min(Math.ceil(contentLength / 45), 6); // Max 6 lines
+                          })(),
+                          WebkitBoxOrient: 'vertical',
+                          wordBreak: 'break-word',
+                          hyphens: 'auto'
+                        }}
+                      >
+                        {nextWeekContent}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    // Collapsed icon
+                    <Tooltip title="next move" placement="top">
+                      <Fab
+                        color="secondary"
+                        size="large"
+                        aria-label="next week plan"
+                        onClick={handleNextWeekPlanClick}
+                        disabled={disabled}
+                        sx={{
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          transition: 'all 0.3s ease-in-out',
+                          width: 64,
+                          height: 64,
+                          '&:hover': {
+                            transform: 'scale(1.05)',
+                            boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
+                          },
+                          '& .MuiFab-label': {
+                            fontSize: '2.5rem !important',
+                            lineHeight: '1 !important'
+                          },
+                          '& svg, & span': {
+                            fontSize: '2.5rem !important'
+                          }
+                        }}
+                      >
+                        <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>📋</span>
+                      </Fab>
+                    </Tooltip>
+                  )}
+                </Box>
+              )}
+              
+              {/* Main FAB - Weekly Memo */}
+              <Tooltip title="Weekly Memo with Advanced AI Assistant" placement="top">
                 <Fab
-                  color="secondary"
+                  color="primary"
                   size="large"
-                  aria-label="next week plan"
-                  onClick={handleNextWeekPlanClick}
+                  aria-label="weekly memo"
+                  onClick={handleMainFabClick}
                   disabled={disabled}
                   sx={{
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
@@ -734,49 +853,19 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
                     }
                   }}
                 >
-                  <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>📋</span>
+                  <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>🎯</span>
                 </Fab>
               </Tooltip>
-            )}
-          </Box>
-        )}
-        
-        {/* Main FAB - Weekly Memo */}
-        <Tooltip title="Weekly Memo with Advanced AI Assistant" placement="top">
-          <Fab
-            color="primary"
-            size="large"
-            aria-label="weekly memo"
-            onClick={handleClick}
-            disabled={disabled}
-            sx={{
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              transition: 'all 0.3s ease-in-out',
-              width: 64,
-              height: 64,
-              '&:hover': {
-                transform: 'scale(1.05)',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.2)'
-              },
-              '& .MuiFab-label': {
-                fontSize: '2.5rem !important',
-                lineHeight: '1 !important'
-              },
-              '& svg, & span': {
-                fontSize: '2.5rem !important'
-              }
-            }}
-          >
-            <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>🎯</span>
-          </Fab>
-        </Tooltip>
-      </Box>
+            </Box>
+          )}
+        </DraggableFabContainer>
+      </DndContext>
       
       {open && (
         <WeeklyMemo
           reportId={reportId}
           open={open}
-          onClose={() => setOpen(false)}
+          onClose={handleFabClose}
         />
       )}
     </>
