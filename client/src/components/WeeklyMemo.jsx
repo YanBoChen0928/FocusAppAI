@@ -574,7 +574,7 @@ function DraggableFabContainer({
     }
   });
 
-  const style = {
+  const containerStyle = {
     position: 'fixed',
     bottom: 24,
     right: 24,
@@ -582,17 +582,30 @@ function DraggableFabContainer({
     transform: isDragging && transform ? 
       `translate(${dragPosition.x + transform.x}px, ${dragPosition.y + transform.y}px)` :
       `translate(${dragPosition.x}px, ${dragPosition.y}px)`,
-    touchAction: 'none',
-    cursor: isDragging ? 'grabbing' : 'grab',
     display: 'flex',
     alignItems: 'center',
     gap: 1,
     userSelect: 'none' // Prevent text selection during drag
   };
 
+  // Drag handle style - small area between FABs for dragging
+  const dragHandleStyle = {
+    width: '12px',
+    height: '40px',
+    backgroundColor: isDragging ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
+    borderRadius: '6px',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    touchAction: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background-color 0.2s ease'
+  };
+
   return children?.({
     ref: setNodeRef,
-    style,
+    containerStyle,
+    dragHandleStyle,
     dragAttributes: attributes ?? {},
     dragListeners: listeners ?? {},
     isDragging
@@ -711,12 +724,11 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
           dragPosition={dragPosition}
           setDragPosition={setDragPosition}
         >
-          {({ ref, style, dragAttributes, dragListeners, isDragging: dragging }) => (
+          {({ ref, containerStyle, dragHandleStyle, dragAttributes, dragListeners, isDragging: dragging }) => (
             <Box
               ref={ref}
-              style={style}
+              style={containerStyle}
               {...dragAttributes}
-              {...dragListeners}
               sx={{
                 opacity: dragging ? 0.8 : 1,
                 transition: dragging ? 'none' : 'all 0.3s ease-in-out'
@@ -728,8 +740,7 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    transition: 'all 0.3s ease-in-out',
-                    marginRight: 1
+                    transition: 'all 0.3s ease-in-out'
                   }}
                 >
                   {expanded ? (
@@ -827,6 +838,30 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
                 </Box>
               )}
               
+              {/* Drag Handle - Only visible when secondary FAB exists */}
+              {hasNextWeekPlan && (
+                <Box
+                  {...dragListeners}
+                  sx={{
+                    ...dragHandleStyle,
+                    marginX: 0.5,
+                    '&:hover': {
+                      backgroundColor: 'rgba(0,0,0,0.2)'
+                    }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: '4px',
+                      height: '16px',
+                      backgroundColor: 'currentColor',
+                      opacity: 0.5,
+                      borderRadius: '2px'
+                    }}
+                  />
+                </Box>
+              )}
+              
               {/* Main FAB - Weekly Memo */}
               <Tooltip title="Weekly Memo with Advanced AI Assistant" placement="top">
                 <Fab
@@ -856,6 +891,28 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
                   <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>🎯</span>
                 </Fab>
               </Tooltip>
+              
+              {/* Drag Handle - Always visible next to main FAB */}
+              <Box
+                {...dragListeners}
+                sx={{
+                  ...dragHandleStyle,
+                  marginLeft: 0.5,
+                  '&:hover': {
+                    backgroundColor: 'rgba(0,0,0,0.2)'
+                  }
+                }}
+              >
+                <Box
+                  sx={{
+                    width: '4px',
+                    height: '16px',
+                    backgroundColor: 'currentColor',
+                    opacity: 0.5,
+                    borderRadius: '2px'
+                  }}
+                />
+              </Box>
             </Box>
           )}
         </DraggableFabContainer>
