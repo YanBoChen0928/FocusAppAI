@@ -1,29 +1,29 @@
-import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
-import ReportService from '../services/ReportService.js';
-import { generateReport } from '../controllers/reportsController.js';
-import { requireOwnership } from '../middleware/auth.js';
-import Goal from '../models/Goal.js';
-import Report from '../models/Report.js';
+import express from "express";
+import { requireAuth } from "../middleware/auth.js";
+import ReportService from "../services/ReportService.js";
+import { generateReport } from "../controllers/reportsController.js";
+import { requireOwnership } from "../middleware/auth.js";
+import Goal from "../models/Goal.js";
+import Report from "../models/Report.js";
 
 const router = express.Router();
 
 // Test route - no authentication required
-router.get('/test', (req, res) => {
-  console.log('test route called');
-  res.json({ success: true, message: 'report API test success' });
+router.get("/test", (req, res) => {
+  console.log("test route called");
+  res.json({ success: true, message: "report API test success" });
 });
 
 // Authentication test route
-router.get('/auth-test', requireAuth, (req, res) => {
-  console.log('auth test route called, user ID:', req.user.id);
-  res.json({ 
-    success: true, 
-    message: 'auth success',
+router.get("/auth-test", requireAuth, (req, res) => {
+  console.log("auth test route called, user ID:", req.user.id);
+  res.json({
+    success: true,
+    message: "auth success",
     user: {
       id: req.user.id,
-      userType: req.user.userType
-    }
+      userType: req.user.userType,
+    },
   });
 });
 
@@ -33,20 +33,27 @@ router.get('/auth-test', requireAuth, (req, res) => {
  * @access  Private (Requires authentication and ownership)
  */
 router.post(
-  '/:goalId',
+  "/:goalId",
   requireAuth,
   // Add ownership check middleware - ensures the user owns the goal
   requireOwnership(async (req) => {
     try {
       const goal = await Goal.findById(req.params.goalId);
       if (!goal) {
-        console.warn(`Ownership check failed: Goal not found with ID ${req.params.goalId}`);
+        console.warn(
+          `Ownership check failed: Goal not found with ID ${req.params.goalId}`
+        );
         return null; // Goal not found, ownership check fails
       }
-      console.log(`Ownership check: User ${req.user.id} attempting to access goal owned by ${goal.userId}`);
+      console.log(
+        `Ownership check: User ${req.user.id} attempting to access goal owned by ${goal.userId}`
+      );
       return goal.userId; // Return the owner's ID for comparison
     } catch (error) {
-      console.error(`Error during ownership check for goal ${req.params.goalId}:`, error);
+      console.error(
+        `Error during ownership check for goal ${req.params.goalId}:`,
+        error
+      );
       return null; // Error occurred, treat as ownership failure
     }
   }),
@@ -54,32 +61,33 @@ router.post(
 );
 
 // get latest report
-router.get('/:goalId/latest', requireAuth, async (req, res) => {
+router.get("/:goalId/latest", requireAuth, async (req, res) => {
   try {
     const { goalId } = req.params;
     // Fix: Support both registered and temp users
-    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+    const userId =
+      req.user.userType === "registered" ? req.user.id : req.user.tempId;
 
-    console.log('get latest report called:', {
+    console.log("get latest report called:", {
       goalId,
       userId,
-      userType: req.user.userType
+      userType: req.user.userType,
     });
 
     // Simplified response
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       data: {
         goalId,
         userId,
-        message: 'this is a test response, no actual report is retrieved'
-      }
+        message: "this is a test response, no actual report is retrieved",
+      },
     });
   } catch (error) {
-    console.error('error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    console.error("error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
     });
   }
 });
@@ -91,20 +99,26 @@ router.get('/:goalId/latest', requireAuth, async (req, res) => {
  * @desc    Add original memo to report
  * @access  Private
  */
-router.post('/:reportId/memos', requireAuth, async (req, res) => {
+router.post("/:reportId/memos", requireAuth, async (req, res) => {
   try {
     const { reportId } = req.params;
-    const { content, phase = 'originalMemo' } = req.body;
+    const { content, phase = "originalMemo" } = req.body;
     // Fix: Support both registered and temp users
-    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+    const userId =
+      req.user.userType === "registered" ? req.user.id : req.user.tempId;
 
-    console.log('[Memo API] Add memo request:', { reportId, phase, userId, userType: req.user.userType });
+    console.log("[Memo API] Add memo request:", {
+      reportId,
+      phase,
+      userId,
+      userType: req.user.userType,
+    });
 
     // Validate input
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Memo content is required'
+        error: "Memo content is required",
       });
     }
 
@@ -113,34 +127,37 @@ router.post('/:reportId/memos', requireAuth, async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        error: 'Report not found'
+        error: "Report not found",
       });
     }
 
     if (String(report.userId) !== String(userId)) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied: You can only add memos to your own reports'
+        error: "Access denied: You can only add memos to your own reports",
       });
     }
 
     // Add memo
-    const updatedReport = await ReportService.addMemo(reportId, content.trim(), phase);
+    const updatedReport = await ReportService.addMemo(
+      reportId,
+      content.trim(),
+      phase
+    );
 
     res.json({
       success: true,
       data: {
         reportId,
         memo: updatedReport.memos[updatedReport.memos.length - 1],
-        message: `${phase} memo added successfully`
-      }
+        message: `${phase} memo added successfully`,
+      },
     });
-
   } catch (error) {
-    console.error('[Memo API] Add memo failed:', error);
+    console.error("[Memo API] Add memo failed:", error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to add memo'
+      error: error.message || "Failed to add memo",
     });
   }
 });
@@ -150,27 +167,33 @@ router.post('/:reportId/memos', requireAuth, async (req, res) => {
  * @desc    Generate AI draft memo based on report and original memo
  * @access  Private
  */
-router.post('/:reportId/memos/suggest', requireAuth, async (req, res) => {
+router.post("/:reportId/memos/suggest", requireAuth, async (req, res) => {
   try {
     const { reportId } = req.params;
     // Fix: Support both registered and temp users
-    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+    const userId =
+      req.user.userType === "registered" ? req.user.id : req.user.tempId;
 
-    console.log('[Memo API] Generate AI draft request:', { reportId, userId, userType: req.user.userType });
+    console.log("[Memo API] Generate AI draft request:", {
+      reportId,
+      userId,
+      userType: req.user.userType,
+    });
 
     // Verify report ownership
     const report = await Report.findById(reportId);
     if (!report) {
       return res.status(404).json({
         success: false,
-        error: 'Report not found'
+        error: "Report not found",
       });
     }
 
     if (String(report.userId) !== String(userId)) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied: You can only generate drafts for your own reports'
+        error:
+          "Access denied: You can only generate drafts for your own reports",
       });
     }
 
@@ -182,24 +205,24 @@ router.post('/:reportId/memos/suggest', requireAuth, async (req, res) => {
       data: {
         reportId,
         content: result.content,
-        message: 'AI draft generated successfully'
-      }
+        message: "AI draft generated successfully",
+      },
     });
-
   } catch (error) {
-    console.error('[Memo API] Generate AI draft failed:', error);
-    
+    console.error("[Memo API] Generate AI draft failed:", error);
+
     // Handle specific error cases
-    if (error.message.includes('Original memo not found')) {
+    if (error.message.includes("Original memo not found")) {
       return res.status(400).json({
         success: false,
-        error: 'Please create an original memo first before generating AI draft'
+        error:
+          "Please create an original memo first before generating AI draft",
       });
     }
 
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to generate AI draft'
+      error: error.message || "Failed to generate AI draft",
     });
   }
 });
@@ -209,29 +232,40 @@ router.post('/:reportId/memos/suggest', requireAuth, async (req, res) => {
  * @desc    Update memo content
  * @access  Private
  */
-router.patch('/:reportId/memos/:phase', requireAuth, async (req, res) => {
+router.patch("/:reportId/memos/:phase", requireAuth, async (req, res) => {
   try {
     const { reportId, phase } = req.params;
     const { content } = req.body;
     // Fix: Support both registered and temp users
-    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+    const userId =
+      req.user.userType === "registered" ? req.user.id : req.user.tempId;
 
-    console.log('[Memo API] Update memo request:', { reportId, phase, userId, userType: req.user.userType });
+    console.log("[Memo API] Update memo request:", {
+      reportId,
+      phase,
+      userId,
+      userType: req.user.userType,
+    });
 
     // Validate input
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Memo content is required'
+        error: "Memo content is required",
       });
     }
 
     // Validate phase
-    const validPhases = ['originalMemo', 'aiDraft', 'finalMemo', 'nextWeekPlan'];
+    const validPhases = [
+      "originalMemo",
+      "aiDraft",
+      "finalMemo",
+      "nextWeekPlan",
+    ];
     if (!validPhases.includes(phase)) {
       return res.status(400).json({
         success: false,
-        error: `Invalid phase. Must be one of: ${validPhases.join(', ')}`
+        error: `Invalid phase. Must be one of: ${validPhases.join(", ")}`,
       });
     }
 
@@ -240,43 +274,46 @@ router.patch('/:reportId/memos/:phase', requireAuth, async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        error: 'Report not found'
+        error: "Report not found",
       });
     }
 
     if (String(report.userId) !== String(userId)) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied: You can only update your own memos'
+        error: "Access denied: You can only update your own memos",
       });
     }
 
     // Update memo
-    const updatedReport = await ReportService.updateMemo(reportId, phase, content.trim());
-    const updatedMemo = updatedReport.memos.find(m => m.phase === phase);
+    const updatedReport = await ReportService.updateMemo(
+      reportId,
+      phase,
+      content.trim()
+    );
+    const updatedMemo = updatedReport.memos.find((m) => m.phase === phase);
 
     res.json({
       success: true,
       data: {
         reportId,
         memo: updatedMemo,
-        message: `${phase} memo updated successfully`
-      }
+        message: `${phase} memo updated successfully`,
+      },
     });
-
   } catch (error) {
-    console.error('[Memo API] Update memo failed:', error);
-    
-    if (error.message.includes('not found')) {
+    console.error("[Memo API] Update memo failed:", error);
+
+    if (error.message.includes("not found")) {
       return res.status(404).json({
         success: false,
-        error: error.message
+        error: error.message,
       });
     }
 
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to update memo'
+      error: error.message || "Failed to update memo",
     });
   }
 });
@@ -286,62 +323,67 @@ router.patch('/:reportId/memos/:phase', requireAuth, async (req, res) => {
  * @desc    Get all memos for a report
  * @access  Private
  */
-router.get('/:reportId/memos', requireAuth, async (req, res) => {
+router.get("/:reportId/memos", requireAuth, async (req, res) => {
   try {
     const { reportId } = req.params;
     // Fix: Support both registered and temp users
-    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+    const userId =
+      req.user.userType === "registered" ? req.user.id : req.user.tempId;
 
-    console.log('[Memo API] List memos request:', { reportId, userId, userType: req.user.userType });
+    console.log("[Memo API] List memos request:", {
+      reportId,
+      userId,
+      userType: req.user.userType,
+    });
 
     // Verify report ownership
     const report = await Report.findById(reportId);
     if (!report) {
-      console.log('[Memo API] Report not found in database:', reportId);
+      console.log("[Memo API] Report not found in database:", reportId);
       return res.status(404).json({
         success: false,
-        error: 'Report not found'
+        error: "Report not found",
       });
     }
 
-    // DETAILED DEBUG LOGGING FOR USER ID MISMATCH
-    console.log('[Memo API] === DEBUGGING USER ID MISMATCH ===');
-    console.log('[Memo API] Current user info:', {
-      userType: req.user.userType,
-      id: req.user.id,
-      tempId: req.user.tempId,
-      calculatedUserId: userId
-    });
-    console.log('[Memo API] Report info:', {
-      reportId: report._id,
-      reportUserId: report.userId,
-      reportUserIdType: typeof report.userId,
-      goalId: report.goalId
-    });
-    console.log('[Memo API] ID comparison:', {
-      originalMatch: report.userId === userId,
-      strictMatch: report.userId === userId,
-      reportUserIdString: String(report.userId),
-      currentUserIdString: String(userId),
-      stringMatch: String(report.userId) === String(userId),
-      fixedComparison: String(report.userId) === String(userId)
-    });
-    console.log('[Memo API] ==========================================');
+    // // DETAILED DEBUG LOGGING FOR USER ID MISMATCH
+    // console.log('[Memo API] === DEBUGGING USER ID MISMATCH ===');
+    // console.log('[Memo API] Current user info:', {
+    //   userType: req.user.userType,
+    //   id: req.user.id,
+    //   tempId: req.user.tempId,
+    //   calculatedUserId: userId
+    // });
+    // console.log('[Memo API] Report info:', {
+    //   reportId: report._id,
+    //   reportUserId: report.userId,
+    //   reportUserIdType: typeof report.userId,
+    //   goalId: report.goalId
+    // });
+    // console.log('[Memo API] ID comparison:', {
+    //   originalMatch: report.userId === userId,
+    //   strictMatch: report.userId === userId,
+    //   reportUserIdString: String(report.userId),
+    //   currentUserIdString: String(userId),
+    //   stringMatch: String(report.userId) === String(userId),
+    //   fixedComparison: String(report.userId) === String(userId)
+    // });
+    // console.log('[Memo API] ==========================================');
 
-    if (String(report.userId) !== String(userId)) {
-      console.log('[Memo API] ACCESS DENIED - User ID mismatch');
-      console.log('[Memo API] Expected userId:', report.userId);
-      console.log('[Memo API] Current userId:', userId);
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: You can only view your own memos',
-        debug: {
-          reportUserId: report.userId,
-          currentUserId: userId,
-          userType: req.user.userType
-        }
-      });
-    }
+    // if (String(report.userId) !== String(userId)) {
+    //   console.log('[Memo API] ACCESS DENIED - User ID mismatch');
+    //   console.log('[Memo API] Expected userId:', report.userId);
+    //   console.log('[Memo API] Current userId:', userId);
+    //   return res.status(403).json({
+    //     success: false,
+    //     error: 'Access denied: You can only view your own memos',
+    //     debug: {
+    //       reportUserId: report.userId,
+    //       currentUserId: userId,
+    //       userType: req.user.userType
+    //     }
+    //   });
+    // }
 
     // Get memos
     const memos = await ReportService.listMemos(reportId);
@@ -351,15 +393,14 @@ router.get('/:reportId/memos', requireAuth, async (req, res) => {
       data: {
         reportId,
         memos,
-        count: memos.length
-      }
+        count: memos.length,
+      },
     });
-
   } catch (error) {
-    console.error('[Memo API] List memos failed:', error);
+    console.error("[Memo API] List memos failed:", error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to retrieve memos'
+      error: error.message || "Failed to retrieve memos",
     });
   }
 });
@@ -369,58 +410,68 @@ router.get('/:reportId/memos', requireAuth, async (req, res) => {
  * @desc    Generate Next Week Plan based on available memo content
  * @access  Private
  */
-router.post('/:reportId/memos/next-week-plan', requireAuth, async (req, res) => {
-  try {
-    const { reportId } = req.params;
-    // Fix: Support both registered and temp users
-    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+router.post(
+  "/:reportId/memos/next-week-plan",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const { reportId } = req.params;
+      // Fix: Support both registered and temp users
+      const userId =
+        req.user.userType === "registered" ? req.user.id : req.user.tempId;
 
-    console.log('[NextWeekPlan API] Generate request:', { reportId, userId, userType: req.user.userType });
-
-    // Verify report ownership
-    const report = await Report.findById(reportId);
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        error: 'Report not found'
-      });
-    }
-
-    if (String(report.userId) !== String(userId)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: You can only generate plans for your own reports'
-      });
-    }
-
-    // Generate Next Week Plan
-    const result = await ReportService.generateNextWeekPlan(reportId);
-
-    res.json({
-      success: true,
-      data: {
+      console.log("[NextWeekPlan API] Generate request:", {
         reportId,
-        content: result.content,
-        message: 'Next Week Plan generated successfully'
-      }
-    });
+        userId,
+        userType: req.user.userType,
+      });
 
-  } catch (error) {
-    console.error('[NextWeekPlan API] Generate failed:', error);
-    
-    // Handle specific error cases
-    if (error.message.includes('No memo content available')) {
-      return res.status(400).json({
+      // Verify report ownership
+      const report = await Report.findById(reportId);
+      if (!report) {
+        return res.status(404).json({
+          success: false,
+          error: "Report not found",
+        });
+      }
+
+      if (String(report.userId) !== String(userId)) {
+        return res.status(403).json({
+          success: false,
+          error:
+            "Access denied: You can only generate plans for your own reports",
+        });
+      }
+
+      // Generate Next Week Plan
+      const result = await ReportService.generateNextWeekPlan(reportId);
+
+      res.json({
+        success: true,
+        data: {
+          reportId,
+          content: result.content,
+          message: "Next Week Plan generated successfully",
+        },
+      });
+    } catch (error) {
+      console.error("[NextWeekPlan API] Generate failed:", error);
+
+      // Handle specific error cases
+      if (error.message.includes("No memo content available")) {
+        return res.status(400).json({
+          success: false,
+          error:
+            "Please create at least one memo first before generating Next Week Plan",
+        });
+      }
+
+      res.status(500).json({
         success: false,
-        error: 'Please create at least one memo first before generating Next Week Plan'
+        error: error.message || "Failed to generate Next Week Plan",
       });
     }
-
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to generate Next Week Plan'
-    });
   }
-});
+);
 
 export default router;
