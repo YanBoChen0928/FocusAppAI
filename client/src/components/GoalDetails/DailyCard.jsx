@@ -195,7 +195,7 @@ export default function DailyCard({ card, goal, isToday, onUpdate, onViewDeclara
           flexDirection: 'column',
           justifyContent: 'space-between',
           boxSizing: 'border-box',
-          height: {xs: '120px', sm: '140px', md: '150px'},
+          minHeight: {xs: '120px', sm: '140px', md: '150px'},
           margin: 0
         }}
       >
