@@ -131,106 +131,20 @@ export default function GoalDetails({
     console.log("goalId in GoalDetails:", goalId);
     if (!goalId) return;
 
-    // Save current goal data before switching to prevent data loss
-    if (selectedGoal && selectedGoal._id !== goalId && selectedGoal.dailyCards) {
-      console.log("Saving current goal data before switching to new goal");
-      
-      // Save selected goal data to database to prevent record loss when switching goals
-      const saveCurrentGoalData = async () => {
-        try {
-          console.log("Attempting to save goal data before switch", selectedGoal._id);
-          // Ensure we've saved any pending dailyCards updates
-          if (dailyCards && dailyCards.length > 0) {
-            // We don't need to update the whole goal, just ensure dailyCards are saved
-            const latestGoal = {
-              ...selectedGoal,
-              dailyCards: JSON.parse(JSON.stringify(dailyCards)) // Deep copy to avoid reference issues
-            };
-            
-            // Update goal with latest dailyCards data
-            await apiService.goals.update(selectedGoal._id, { 
-              dailyCards: latestGoal.dailyCards 
-            });
-            console.log("Successfully saved goal data before switching");
-          }
-        } catch (error) {
-          console.error("Error saving goal data before switch:", error);
+    const refreshGoalData = async () => {
+      try {
+        const response = await apiService.goals.getById(goalId);
+        if (response?.data?.data) {
+          setSelectedGoal(response.data.data);
+          setDailyCards(response.data.data.dailyCards || []);
         }
-      };
-      
-      // Execute the save operation
-      saveCurrentGoalData();
-    }
-
-    // get current user ID
-    const getCurrentUserId = () => {
-      const userId = localStorage.getItem("userId");
-      const tempId = localStorage.getItem("tempId");
-      return userId || tempId;
+      } catch (error) {
+        console.error("Error fetching goal data:", error);
+      }
     };
 
-    const currentUserId = getCurrentUserId();
-    console.log("current user ID:", currentUserId);
-
-    try {
-      // select from goals array and check user ID
-      if (goals && goals.length > 0) {
-        const goal = goals.find((g) => {
-          const matchId = (g._id === goalId || g.id === goalId);
-          const matchUserId = (g.userId === currentUserId);
-          
-          console.log("goal matching check:", {
-            goalId: g._id || g.id,
-            matchId,
-            goalUserId: g.userId,
-            currentUserId,
-            matchUserId
-          });
-
-          return matchId && matchUserId;
-        });
-
-        if (goal) {
-          console.log("found matching goal in local goals array:", goal);
-          setSelectedGoal(goal);
-          return;
-        } else {
-          console.log(`no goal found in local goals array with ID ${goalId}, but user ID matches, trying to get from API`);
-        }
-      } else {
-        console.log("goals array is empty or invalid");
-      }
-      
-      // if no goal found in local goals array, try to get from API directly
-      const fetchGoalDetails = async () => {
-        try {
-          console.log(`trying to get goal details from API, ID: ${goalId}`);
-          const response = await apiService.goals.getById(goalId);
-          
-          if (response && response.data && response.data.data) {
-            const apiGoal = response.data.data;
-            
-            // extra check if user ID matches
-            if (apiGoal.userId !== currentUserId) {
-              console.error("goal does not belong to current user");
-              return;
-            }
-            
-            console.log("got goal details from API:", apiGoal);
-            setSelectedGoal(apiGoal);
-          } else {
-            console.error("API did not return valid goal data");
-          }
-        } catch (error) {
-          console.error(`failed to get goal details from API, ID: ${goalId}`, error);
-        }
-      };
-      
-      fetchGoalDetails();
-    } catch (error) {
-      console.error("error selecting goal:", error);
-    }
-  }, [goalId, goals]);
+    refreshGoalData();
+  }, [goalId]);
 
   // when selected goal changes, update daily cards data
   useEffect(() => {

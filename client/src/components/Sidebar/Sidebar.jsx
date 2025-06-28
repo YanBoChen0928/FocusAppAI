@@ -169,15 +169,19 @@ export default function Sidebar({
 
   return (
     <Box
+      className={styles.sidebar}
       sx={{
-        width: "300px",
-        height: "100vh",
-        bgcolor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        flexDirection: "column",
-        p: 2,
+        width: '100%',
+        height: 'fit-content',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        '& > *': {
+          maxWidth: '100%',
+          boxSizing: 'border-box'
+        },
         ...sx
       }}
     >
@@ -204,7 +208,19 @@ export default function Sidebar({
 
       <Divider sx={{ mb: 2 }} />
 
-      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflowY: "auto",
+        overflowX: "hidden",
+        width: '100%',
+        boxSizing: 'border-box',
+        '& > div': {
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflowX: 'hidden'
+        }
+      }}>
         {isLoading && <CircularProgress sx={{ display: 'block', margin: 'auto' }} />}
         {error && <Alert severity="error">{error}</Alert>}
         {!isLoading && !error && (
@@ -220,6 +236,12 @@ export default function Sidebar({
                   key={goal._id || goal.id}
                   onClick={() => onGoalSelect(goal)}
                   className={activeGoalId === (goal._id || goal.id) ? styles.goalCardSelected : ""}
+                  style={{
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden'
+                  }}
                 >
                   <GoalCard
                     goal={goal}
@@ -259,6 +281,12 @@ export default function Sidebar({
                           key={goal._id || goal.id}
                           onClick={() => onGoalSelect(goal)}
                           className={activeGoalId === (goal._id || goal.id) ? styles.goalCardSelected : ""}
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden'
+                          }}
                         >
                           <GoalCard
                             goal={goal}

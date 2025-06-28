@@ -1,151 +1,159 @@
-import { HfInference } from '@huggingface/inference';
 import OpenAI from 'openai';
 import Progress from '../models/Progress.js';
 import Goal from '../models/Goal.js';
 import Report from '../models/Report.js';
-import RAGService from './RAGService.js';
 import NodeCache from 'node-cache';
-import { formatISO, parseISO, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth } from 'date-fns';
-const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
+import RAGService from './RAGService.js';
+import { startOfDay, endOfDay, parseISO, formatISO, subDays } from 'date-fns';
 
-// Initialize AI clients
-const AI_SERVICE = process.env.AI_SERVICE || 'openai'; // 'openai' or 'huggingface'
-const VALID_AI_SERVICES = ['openai', 'huggingface'];
-if (!VALID_AI_SERVICES.includes(AI_SERVICE)) {
-  throw new Error(`Invalid AI_SERVICE value: '${AI_SERVICE}'. Valid options are: ${VALID_AI_SERVICES.join(', ')}`);
-}
-
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Initialize Hugging Face client only if it's selected
-const hf = AI_SERVICE === 'huggingface' ? new HfInference(process.env.HUGGING_FACE_API_KEY) : null;
+const cache = new NodeCache({ stdTTL: 3600 }); // cache 1 hour
 
 class ReportService {
   static async generateReport(goalId, userId, timeRange = 'last7days') {
     try {
       this.currentGoalId = goalId;
       
+      // Get user's timezone
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
       // Calculate time range
       let period;
-      
-      console.log('Received time range:', timeRange);
+      const now = new Date();
 
       if (typeof timeRange === 'string') {
-        const now = new Date();
-        
         switch (timeRange) {
           case 'last7days': {
-            const end = endOfDay(now);
-            const start = startOfDay(subDays(now, 6));
+            const today = startOfDay(now);
+            const sevenDaysAgo = subDays(today, 6);
             period = {
-              startDate: start,
-              endDate: end
+              startDate: sevenDaysAgo,
+              endDate: endOfDay(now)
             };
             break;
           }
-          case 'last30days': {
-            const end = endOfDay(now);
-            const start = startOfDay(subDays(now, 29));
+          case 'today': {
             period = {
-              startDate: start,
-              endDate: end
+              startDate: startOfDay(now),
+              endDate: endOfDay(now)
             };
             break;
           }
           default: {
-            const end = endOfDay(now);
-            const start = startOfDay(subDays(now, 6));
+            const today = startOfDay(now);
+            const sevenDaysAgo = subDays(today, 6);
             period = {
-              startDate: start,
-              endDate: end
+              startDate: sevenDaysAgo,
+              endDate: endOfDay(now)
             };
           }
         }
       } else if (timeRange?.startDate && timeRange?.endDate) {
-        // Handle custom time range or client-provided range
+        const customStart = parseISO(timeRange.startDate);
+        const customEnd = parseISO(timeRange.endDate);
+        
         period = {
-          startDate: new Date(timeRange.startDate),
-          endDate: new Date(timeRange.endDate)
+          startDate: startOfDay(customStart),
+          endDate: endOfDay(customEnd)
         };
       }
 
-      // Log the actual time range being used
-      console.log('Using time range for query:', {
-        startDate: period.startDate.toISOString(),
-        endDate: period.endDate.toISOString(),
-        startLocal: period.startDate.toLocaleString(),
-        endLocal: period.endDate.toLocaleString()
-      });
+      // Calculate days difference for analysis type determination
+      const daysDifference = Math.ceil(
+        (period.endDate - period.startDate) / (1000 * 60 * 60 * 24)
+      );
 
-      // 1. get goal information
+      // Determine if deep analysis is needed
+      const isDeepAnalysis = this._shouldUseDeepAnalysis(daysDifference);
+      
+      // Log RAG-related information
+      console.log('[Analysis] Type:', isDeepAnalysis ? 'Deep Analysis' : 'Basic Analysis');
+      console.log('[Analysis] Time range:', { 
+        startDate: period.startDate, 
+        endDate: period.endDate, 
+        daysDifference 
+      });
+      console.log('[Analysis] Model selected:', isDeepAnalysis ? 'GPT-o4-mini + RAG' : 'GPT-4o-mini');
+
+      // Get goal information
       const goal = await Goal.findById(goalId);
       if (!goal) {
-        throw new Error('goal does not exist');
+        throw new Error('Goal does not exist');
       }
 
-      // 2. get progress records with UTC time range
+      // Get progress records
       const progress = await Progress.find({
         goalId,
         date: {
           $gte: period.startDate,
-          $lte: period.endDate
+          $lt: period.endDate
         }
       }).sort({ date: -1 });
 
-      console.log('MongoDB query results:', {
-        progressRecords: progress.length,
-        dateRange: {
-          start: period.startDate.toISOString(),
-          end: period.endDate.toISOString()
-        }
-      });
-
-      // 3. analyze data
+      // Analyze data
       const analysis = {
         totalRecords: progress.length,
         completedTasks: progress.filter(p => p.completed).length,
         completionRate: progress.length > 0 ? 
           (progress.filter(p => p.completed).length / progress.length) * 100 : 0,
-        lastUpdate: progress.length > 0 ? progress[0].date : new Date()
+        lastUpdate: progress.length > 0 ? progress[0].date : new Date(),
+        timeRange: {
+          start: period.startDate,
+          end: period.endDate,
+          days: daysDifference
+        }
       };
 
-      // 4. prepare prompt
-      const prompt = this._preparePrompt(goal, progress, analysis, period);
+      // Prepare base prompt
+      let prompt = this._preparePrompt(goal, progress, analysis);
       
-      // 5. generate AI analysis
-      const aiAnalysis = await this._generateAIAnalysis(prompt);
+      // Enhance prompt with RAG if needed
+      if (isDeepAnalysis) {
+        console.time('[RAG] Total analysis time');
+        try {
+          prompt = await RAGService.enhancePromptWithContext(prompt, goalId);
+          console.log('[RAG] Successfully enhanced prompt with historical context');
+        } catch (error) {
+          console.error('[RAG] Failed to enhance prompt:', error);
+          console.warn('[RAG] Falling back to basic analysis');
+        }
+        console.timeEnd('[RAG] Total analysis time');
+      }
+      
+      // Generate AI analysis
+      const aiAnalysis = await this._generateAIAnalysis(prompt, isDeepAnalysis);
 
-      // 6. create report with proper period
+      // Create report
       const report = new Report({
         goalId,
         userId,
         content: aiAnalysis,
         analysis,
         type: timeRange,
-        period: {
-          startDate: period.startDate,
-          endDate: period.endDate
-        },
-        isGenerated: true
+        period,
+        isGenerated: true,
+        analysisType: isDeepAnalysis ? 'deep' : 'basic'
       });
 
       await report.save();
-      
-      try {
-        await RAGService.saveReportEmbedding(report);
-      } catch (ragError) {
-        console.warn('Failed to save report embedding:', ragError);
+
+      // Save embedding for future RAG if it's a deep analysis
+      if (isDeepAnalysis) {
+        try {
+          await RAGService.saveReportEmbedding(report);
+          console.log('[RAG] Successfully saved report embedding');
+        } catch (error) {
+          console.error('[RAG] Failed to save report embedding:', error);
+        }
       }
-      
+
       return report;
     } catch (error) {
-      console.error('Generate report failed:', error);
+      console.error('[RAG] Generate report failed:', error);
       throw error;
-    } finally {
-      this.currentGoalId = null;
     }
   }
 
@@ -159,92 +167,18 @@ class ReportService {
     }
   }
 
-  static async _generateAIAnalysis(prompt) {
-    try {
-      if (AI_SERVICE === 'openai') {
-        return await this._generateOpenAIAnalysis(prompt);
-      } else {
-        return await this._generateHuggingFaceAnalysis(prompt);
-      }
-    } catch (error) {
-      console.error(`${AI_SERVICE} analysis generation failed:`, error);
-      throw new Error('AI analysis generation failed, please try again later');
-    }
+  static _shouldUseDeepAnalysis(daysDifference) {
+    // Use deep analysis for:
+    // 1. Time range > 21 days
+    // 2. Cross-month analysis (implemented in future)
+    // 3. Milestone detection (implemented in future)
+    const shouldUseRAG = daysDifference >= 21;
+    console.log('[RAG] Should use deep analysis:', shouldUseRAG, 'Days difference:', daysDifference);
+    return shouldUseRAG;
   }
 
-  static async _generateOpenAIAnalysis(prompt) {
-    try {
-      console.log('Starting OpenAI analysis generation with model:', 'gpt-4');
-      console.log('AI_SERVICE:', process.env.AI_SERVICE);
-      console.log('OpenAI API Key configured:', !!process.env.OPENAI_API_KEY);
-      
-      let enhancedPrompt = prompt;
-      try {
-        // Enhance prompt with RAG (non-critical)
-        enhancedPrompt = await RAGService.enhancePromptWithContext(prompt, this.currentGoalId);
-        console.log('Successfully enhanced prompt with RAG');
-      } catch (ragError) {
-        console.warn('RAG enhancement failed, using original prompt:', ragError);
-        // Continue with original prompt
-      }
-      
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        store: true,
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional goal tracking and analysis assistant. Your role is to provide insightful analysis, pattern recognition, and constructive suggestions based on user's goal progress data."
-          },
-          {
-            role: "user",
-            content: enhancedPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-        top_p: 0.95,
-      });
-
-      console.log('OpenAI API call successful');
-      return completion.choices[0].message.content;
-    } catch (error) {
-      console.error('OpenAI API call failed:', {
-        error: error.message,
-        type: error.type,
-        code: error.code,
-        stack: error.stack
-      });
-      throw error;
-    }
-  }
-
-  static async _generateHuggingFaceAnalysis(prompt) {
-    const result = await hf.textGeneration({
-      model: 'gpt2', // or other suitable models
-      inputs: prompt,
-      parameters: {
-        max_new_tokens: 500,
-        temperature: 0.7,
-        top_p: 0.95,
-        do_sample: true
-      }
-    });
-
-    return result.generated_text;
-  }
-
-  static _preparePrompt(goal, progress, analysis, period) {
-    const startDateStr = formatISO(period.startDate, { representation: 'date' });
-    const endDateStr = formatISO(period.endDate, { representation: 'date' });
-    
-    console.log('Preparing prompt with date range:', {
-      startDate: startDateStr,
-      endDate: endDateStr,
-      progressRecords: progress.length
-    });
-
-    const prompt = `
+  static _preparePrompt(goal, progress, analysis) {
+    return `
 As a professional goal analysis assistant, please generate a detailed analysis report based on the following information:
 
 Goal Information:
@@ -252,23 +186,13 @@ Title: ${goal.title}
 Current Task: ${goal.currentSettings?.dailyTask || 'None'}
 Priority: ${goal.priority || 'Not set'}
 
-Time Range: ${startDateStr} to ${endDateStr}
-Progress Data:
+Today's Progress Data:
 - Total Records: ${analysis.totalRecords}
 - Completed Tasks: ${analysis.completedTasks}
 - Completion Rate: ${analysis.completionRate.toFixed(1)}%
 
 Detailed Records:
-${progress.map(p => {
-  const recordDate = formatISO(new Date(p.date), { representation: 'date' });
-  let record = `- ${recordDate}:`;
-  if (p.records && p.records.length > 0) {
-    record += '\n' + p.records.map(r => 
-      `  • ${r.activity} (${r.duration} mins)${r.notes ? ': ' + r.notes : ''}`
-    ).join('\n');
-  }
-  return record;
-}).join('\n')}
+${progress.map(p => `- ${new Date(p.date).toLocaleTimeString()}: ${p.content || 'No content'}`).join('\n')}
 
 Please analyze from the following aspects:
 1. Progress Assessment: Analyze the current progress, including completion rate and efficiency
@@ -278,9 +202,6 @@ Please analyze from the following aspects:
 
 Please reply in English, with a positive and encouraging tone, and specific suggestions that are easy to follow.
     `.trim();
-
-    console.log('Generated prompt with proper date formatting');
-    return prompt;
   }
 
   static _generateSuggestions(analysis, goal) {
@@ -344,6 +265,31 @@ Please reply in English, with a positive and encouraging tone, and specific sugg
     }
     
     return recommendations;
+  }
+
+  static async _generateAIAnalysis(prompt, isDeepAnalysis) {
+    try {
+      console.time('[Analysis] Generation');
+      const completion = await openai.chat.completions.create({
+        model: isDeepAnalysis ? "gpt-o4-mini" : "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a goal-oriented AI assistant." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: isDeepAnalysis ? 2000 : 1000
+      });
+      console.timeEnd('[Analysis] Generation');
+
+      return completion.choices[0].message.content;
+    } catch (error) {
+      console.error('[Analysis] Generation failed:', error);
+      if (isDeepAnalysis) {
+        console.warn('[Analysis] Falling back to GPT-4o-mini due to API error');
+        return this._generateAIAnalysis(prompt, false);
+      }
+      throw new Error('AI analysis generation failed, please try again later');
+    }
   }
 }
 

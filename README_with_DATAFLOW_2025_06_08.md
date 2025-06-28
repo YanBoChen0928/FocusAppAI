@@ -79,7 +79,7 @@
 4. **ProgressReport** - AI-powered analysis
    - Location: `src/components/ProgressReport/AIFeedback.jsx`
    - Data source: `reportStore`, goal progress data
-   - AI Service: OpenAI ChatGPT 3.5 API
+   - AI Service: OpenAI ChatGPT 4o-mini API (general)/ RAG: o4-mini
    - Data flow: Collect progress data → Generate AI analysis → Display insights
 
 ### Frontend State Management Flow
