@@ -1,12 +1,22 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import ProfileModal from "../components/ProfileModal";
-import OnboardingModal from "../components/OnboardingModal";
+import { useUserStore } from "../store/userStore";
+import apiService from "../services/api";
 import Header from "../components/Header/Header";
 import Sidebar from "../components/Sidebar/Sidebar";
 import GoalDetails from "../components/GoalDetails/GoalDetails";
 import ProgressReport from "../components/ProgressReport/ProgressReport";
-import apiService from "../services/api";
+import ProfileModal from "../components/ProfileModal";
+import OnboardingModal from "../components/OnboardingModal";
+
+// Import MUI icons and components for reminder
+import InfoIcon from '@mui/icons-material/Info';
+import LooksOneIcon from '@mui/icons-material/LooksOne';
+import LooksTwoIcon from '@mui/icons-material/LooksTwo';
+import Looks3Icon from '@mui/icons-material/Looks3';
+import StarIcon from '@mui/icons-material/Star';
+import { Box, Typography, Chip } from '@mui/material';
+
 import "../styles/Home.css";
 
 /**
@@ -501,6 +511,95 @@ function Home() {
         handleLogout={handleLogout}
         toggleProfileModal={toggleProfileModal}
       />
+
+      {/* Usage Guide Reminder Container - Above main-content */}
+      {user && (
+        <Box 
+          sx={{ 
+            width: '100%',
+            maxWidth: '1200px',
+            margin: '0 auto',
+            px: { xs: 1.5, sm: 2, md: 2.5 },
+            mb: { xs: 1, sm: 1.5, md: 2 }
+          }}
+        >
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 1, sm: 1.5, md: 2 },
+              p: { xs: 1.5, sm: 2 },
+              backgroundColor: 'rgba(13, 94, 109, 0.05)',
+              borderRadius: 2,
+              border: '1px solid rgba(13, 94, 109, 0.1)',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
+          >
+            <InfoIcon sx={{ color: '#0D5E6D', fontSize: { xs: 20, sm: 24 }, flexShrink: 0, mt: { xs: 0.5, sm: 0 } }} />
+            
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' }, 
+              gap: { xs: 1, sm: 1.5, md: 2 }, 
+              flex: 1, 
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              flexWrap: 'wrap'
+            }}>
+              <Chip 
+                icon={<LooksOneIcon />}
+                label="Step 1: Add goals on the left"
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  color: '#0D5E6D', 
+                  borderColor: '#0D5E6D',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: { xs: '100%', sm: 'auto' }
+                }}
+              />
+              <Chip 
+                icon={<LooksTwoIcon />}
+                label="Step 2: Click goal to view details and daily records"
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  color: '#0D5E6D', 
+                  borderColor: '#0D5E6D',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: { xs: '100%', sm: 'auto' }
+                }}
+              />
+              <Chip 
+                icon={<Looks3Icon />}
+                label="Step 3: Complete records for FocusAI analysis (7/30 days)"
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  color: '#0D5E6D', 
+                  borderColor: '#0D5E6D',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: { xs: '100%', sm: 'auto' }
+                }}
+              />
+              <Chip 
+                icon={<StarIcon />}
+                label="Bonus: Use FAB for deep analysis & next week planning"
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 127, 102, 0.1)', 
+                  color: '#FF7F66',
+                  borderColor: '#FF7F66',
+                  border: '1px solid',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: { xs: '100%', sm: 'auto' }
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       <div className="main-content">
         {user ? (
