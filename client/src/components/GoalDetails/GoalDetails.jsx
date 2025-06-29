@@ -20,6 +20,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import ArchiveIcon from "@mui/icons-material/Archive";
+import LooksTwoIcon from "@mui/icons-material/LooksTwo";
 import DailyTasks from "./DailyTasks";
 import WeeklyDailyCards from "./WeeklyDailyCards";
 import GoalDeclaration from "./GoalDeclaration";
@@ -583,7 +584,10 @@ Because the path is already beneath my feet—it's really not that complicated. 
           }}
         >
           <div>
-            <h3>{selectedGoal.title}</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', margin: '0 0 8px 0' }}>
+              <LooksTwoIcon sx={{ mr: 1, fontSize: '1.2rem', color: '#0D5E6D' }} />
+              {selectedGoal.title}
+            </h3>
             {selectedGoal.status === 'archived' && (
               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                 <Chip 

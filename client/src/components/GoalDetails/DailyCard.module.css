@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px;
-  height: 135px;
+  min-height: 135px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   border-radius: 8px;
@@ -117,7 +117,7 @@
 /* Tablet and larger screens */
 @media (min-width: 600px) {
   .card {
-    height: 150px;
+    min-height: 150px;
     padding: 10px 12px;
   }
   
@@ -142,7 +142,7 @@
 /* Desktop screens */
 @media (min-width: 900px) {
   .card {
-    height: 160px;
+    min-height: 160px;
     padding: 12px;
   }
   

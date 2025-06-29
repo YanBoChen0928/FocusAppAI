@@ -49,6 +49,7 @@ import {
   PointerSensor
 } from '@dnd-kit/core';
 import { startOfDay, endOfDay } from 'date-fns';
+import { WeeklyMemoFab } from '../WeeklyMemo';
 
 // Last modified: 2025-06-21
 // Changes: Added paragraph spacing using MUI styling system
@@ -676,7 +677,7 @@ export default function AIFeedback({ goalId }) {
                     elevation: 0,
                     sx: {
                       borderRadius: '14px',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                      boxShadow: '0 12px 40px rgba(0,0,0,0.25), 0 4px 12px rgba(0,0,0,0.15)',
                       overflow: 'hidden'
                     }
                   }}
@@ -694,7 +695,10 @@ export default function AIFeedback({ goalId }) {
                         <div 
                           {...dragAttributes} 
                           {...dragListeners}
-                          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                          style={{ 
+                            cursor: isDragging ? 'grabbing' : 'grab',
+                            color: '#333'
+                          }}
                         >
                           {currentPopoverTitle}
                         </div>
@@ -719,7 +723,7 @@ export default function AIFeedback({ goalId }) {
                       sx={{ 
                         py: 1,
                         px: 2,
-                        backgroundColor: '#f8f8f8',
+                        backgroundColor: '#e8e8e8',
                         borderBottom: '1px solid #eee',
                         '& .MuiCardHeader-action': { mr: -0.5, mt: -0.5 },
                         width: '100%',
@@ -874,6 +878,14 @@ export default function AIFeedback({ goalId }) {
           </Box>
         </Paper>
       </DroppableArea>
+      
+      {/* Weekly Memo Floating Action Button - Phase 2.1 */}
+      {feedback && feedback.id && (
+        <WeeklyMemoFab 
+          reportId={feedback.id}
+          disabled={loading}
+        />
+      )}
     </DndContext>
   );
 }

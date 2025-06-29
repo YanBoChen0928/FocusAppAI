@@ -2,6 +2,7 @@ import Goal from '../models/Goal.js';
 import mongoose from 'mongoose';
 import ReportService from '../services/ReportService.js';
 import Progress from '../models/Progress.js';
+import Report from '../models/Report.js';
 
 // --- Configuration ---
 // Comment out Hugging Face related config
@@ -151,6 +152,10 @@ export const generateReport = async (req, res) => {
   try {
     console.log(`Generating report for goalId: ${goalId} with timeRange:`, timeRange);
     
+    // Get user ID from authenticated request
+    const userId = req.user.userType === 'registered' ? req.user.id : req.user.tempId;
+    console.log(`User ID for report: ${userId}, userType: ${req.user.userType}`);
+    
     // Calculate time range
     let startDate, endDate;
     
@@ -219,21 +224,35 @@ export const generateReport = async (req, res) => {
     // 3. Call AI Service through ReportService
     const feedbackContent = await ReportService._generateAIAnalysis(prompt);
 
-    // 4. Generate a unique report ID 
-    const reportId = new mongoose.Types.ObjectId().toString();
-    
-    // 5. Format the report content
+    // 4. Format the report content
     const formattedContent = formatAIResponse(feedbackContent);
     
-    // 6. Return standardized feedback format
-    console.log(`Successfully generated feedback for goal: ${goalId}`);
+    // 5. CREATE AND SAVE ACTUAL REPORT TO DATABASE
+    const report = new Report({
+      goalId: goalId,
+      userId: userId,
+      period: {
+        startDate: startDate,
+        endDate: endDate
+      },
+      content: typeof formattedContent === 'object' ? JSON.stringify(formattedContent) : formattedContent,
+      type: 'weekly',
+      isGenerated: true,
+      memos: [] // Initialize empty memos array for Phase 2.1
+    });
+
+    const savedReport = await report.save();
+    console.log(`Report saved to database with ID: ${savedReport._id}`);
+    
+    // 6. Return standardized feedback format with REAL report ID
+    console.log(`Successfully generated and saved feedback for goal: ${goalId}`);
     res.status(200).json({
       success: true,
       data: {
-        id: reportId,
+        id: savedReport._id, // Use the real saved report ID
         goalId: goalId,
         content: formattedContent,
-        generatedAt: new Date(),
+        generatedAt: savedReport.createdAt,
         dateRange: {
           startDate: startDate,
           endDate: endDate
@@ -329,4 +348,132 @@ const formatAIResponse = (rawContent) => {
   
   // Fallback to default structure
   return defaultStructure;
+};
+
+// ===== MEMO CONTROLLERS - Phase 2.1 =====
+
+/**
+ * Add memo to report
+ */
+export const addMemo = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { content, phase } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Memo content is required' }
+      });
+    }
+
+    const report = await ReportService.addMemo(reportId, content.trim(), phase);
+
+    res.status(200).json({
+      success: true,
+      data: { report }
+    });
+  } catch (error) {
+    console.error('[Controller] Add memo failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * Generate AI draft memo
+ */
+export const generateAiDraft = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    const result = await ReportService.generateAiDraft(reportId);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('[Controller] Generate AI draft failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * Update memo content
+ */
+export const updateMemo = async (req, res) => {
+  try {
+    const { reportId, phase } = req.params;
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Memo content is required' }
+      });
+    }
+
+    const report = await ReportService.updateMemo(reportId, phase, content.trim());
+
+    res.status(200).json({
+      success: true,
+      data: { report }
+    });
+  } catch (error) {
+    console.error('[Controller] Update memo failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * List all memos for a report
+ */
+export const listMemos = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    const memos = await ReportService.listMemos(reportId);
+
+    res.status(200).json({
+      success: true,
+      data: { memos }
+    });
+  } catch (error) {
+    console.error('[Controller] List memos failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
+};
+
+/**
+ * Generate Next Week Plan - Phase 2.3
+ */
+export const generateNextWeekPlan = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+
+    const result = await ReportService.generateNextWeekPlan(reportId);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('[Controller] Generate Next Week Plan failed:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: error.message }
+    });
+  }
 };

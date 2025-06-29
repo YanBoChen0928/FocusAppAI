@@ -1,0 +1,576 @@
+{
+  "info": {
+    "name": "Weekly Memo Phase 2.1 Tests",
+    "description": "Test collection for Weekly Memo functionality - Phase 2.1 implementation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Setup Tests",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/health",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Test User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{TEST_EMAIL}}\",\n  \"password\": \"{{TEST_PASSWORD}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.data.user.id).to.exist;",
+                  "    pm.environment.set('USER_ID', responseJson.data.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate Test Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeRange\": {\n    \"startDate\": \"2024-01-01\",\n    \"endDate\": \"2024-01-07\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_GOAL_ID}}",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_GOAL_ID}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Report generation successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.data.report._id).to.exist;",
+                  "    pm.environment.set('TEST_REPORT_ID', responseJson.data.report._id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Memo API Tests",
+      "item": [
+        {
+          "name": "Add Original Memo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This week I made good progress on my goal. I completed most of my daily tasks and feel motivated to continue. However, I struggled with time management on Tuesday and Wednesday. Overall, I'm satisfied with my progress and learned some valuable lessons about prioritizing tasks.\",\n  \"phase\": \"originalMemo\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_REPORT_ID}}/memos",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_REPORT_ID}}", "memos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Original memo added successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.data.memo.phase).to.equal('originalMemo');",
+                  "    pm.expect(responseJson.data.memo.content).to.exist;",
+                  "    pm.expect(responseJson.data.memo.timestamp).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate AI Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_REPORT_ID}}/memos/suggest",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_REPORT_ID}}", "memos", "suggest"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('AI draft generated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.data.content).to.exist;",
+                  "    pm.expect(responseJson.data.content.length).to.be.greaterThan(50);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Final Memo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This week has been a journey of growth and learning. I successfully completed most of my daily tasks, which gave me a strong sense of accomplishment and momentum. The consistent effort I put in during the first half of the week really paid off.\\n\\nHowever, I encountered some challenges with time management on Tuesday and Wednesday. I found myself getting distracted and not prioritizing effectively. This taught me the importance of having a clear daily schedule and sticking to it.\\n\\nDespite these setbacks, I'm genuinely satisfied with my overall progress. I've learned valuable lessons about task prioritization and the importance of maintaining focus. Moving forward, I plan to implement a more structured approach to my daily routine and set clearer boundaries around my work time.\\n\\nThis experience has reinforced my commitment to this goal and given me practical insights that I can apply in the coming weeks.\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_REPORT_ID}}/memos/finalMemo",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_REPORT_ID}}", "memos", "finalMemo"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Final memo updated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.data.memo.phase).to.equal('finalMemo');",
+                  "    pm.expect(responseJson.data.memo.content).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List All Memos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_REPORT_ID}}/memos",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_REPORT_ID}}", "memos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Memos listed successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.true;",
+                  "    pm.expect(responseJson.data.memos).to.be.an('array');",
+                  "    pm.expect(responseJson.data.count).to.be.greaterThan(0);",
+                  "    ",
+                  "    // Check that we have the expected phases",
+                  "    const phases = responseJson.data.memos.map(memo => memo.phase);",
+                  "    pm.expect(phases).to.include('originalMemo');",
+                  "    pm.expect(phases).to.include('aiDraft');",
+                  "    pm.expect(phases).to.include('finalMemo');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Handling Tests",
+      "item": [
+        {
+          "name": "Add Memo - Invalid Report ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Test memo content\",\n  \"phase\": \"originalMemo\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/invalid_report_id/memos",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "invalid_report_id", "memos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid report ID handled correctly', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.false;",
+                  "    pm.expect(responseJson.error).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Memo - Empty Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"\",\n  \"phase\": \"originalMemo\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_REPORT_ID}}/memos",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_REPORT_ID}}", "memos"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Empty content validation works', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.false;",
+                  "    pm.expect(responseJson.error).to.include('content is required');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Memo - Invalid Phase",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Test content\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{TEST_REPORT_ID}}/memos/invalidPhase",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{TEST_REPORT_ID}}", "memos", "invalidPhase"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid phase validation works', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.false;",
+                  "    pm.expect(responseJson.error).to.include('Invalid phase');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate AI Draft - No Original Memo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/reports/{{EMPTY_REPORT_ID}}/memos/suggest",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "reports", "{{EMPTY_REPORT_ID}}", "memos", "suggest"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('AI draft requires original memo', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.success).to.be.false;",
+                  "    pm.expect(responseJson.error).to.include('original memo first');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Workflow Tests",
+      "item": [
+        {
+          "name": "Complete 3-Phase Workflow",
+          "item": [
+            {
+              "name": "Step 1: Create Original Memo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"This week I focused on building consistent habits. I managed to complete my daily tasks 5 out of 7 days, which is an improvement from last week. I noticed that I work better in the morning and struggle with focus in the afternoon. I want to explore time-blocking techniques to improve my productivity.\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/reports/{{WORKFLOW_REPORT_ID}}/memos",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "reports", "{{WORKFLOW_REPORT_ID}}", "memos"]
+                }
+              }
+            },
+            {
+              "name": "Step 2: Generate AI Draft",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/reports/{{WORKFLOW_REPORT_ID}}/memos/suggest",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "reports", "{{WORKFLOW_REPORT_ID}}", "memos", "suggest"]
+                }
+              }
+            },
+            {
+              "name": "Step 3: Finalize Memo",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"This week marked a significant step forward in building consistent habits. I successfully completed my daily tasks 5 out of 7 days, which represents a meaningful improvement from last week's performance.\\n\\nKey insights from this week:\\n- Morning productivity is my strength - I should leverage this by scheduling important tasks early\\n- Afternoon focus challenges need attention - possibly due to energy dips or distractions\\n- The 5/7 completion rate shows progress but indicates room for improvement\\n\\nMoving forward, I plan to experiment with time-blocking techniques to better structure my day and maintain focus during challenging afternoon hours. This week has reinforced that consistency is a skill that improves with practice.\"\n}"
+                },
+                "url": {
+                  "raw": "{{BASE_URL}}/api/reports/{{WORKFLOW_REPORT_ID}}/memos/finalMemo",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "reports", "{{WORKFLOW_REPORT_ID}}", "memos", "finalMemo"]
+                }
+              }
+            },
+            {
+              "name": "Step 4: Verify Complete Workflow",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{BASE_URL}}/api/reports/{{WORKFLOW_REPORT_ID}}/memos",
+                  "host": ["{{BASE_URL}}"],
+                  "path": ["api", "reports", "{{WORKFLOW_REPORT_ID}}", "memos"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Complete workflow verification', function () {",
+                      "    pm.response.to.have.status(200);",
+                      "    const responseJson = pm.response.json();",
+                      "    pm.expect(responseJson.success).to.be.true;",
+                      "    pm.expect(responseJson.data.count).to.equal(3);",
+                      "    ",
+                      "    const phases = responseJson.data.memos.map(memo => memo.phase);",
+                      "    pm.expect(phases).to.include.members(['originalMemo', 'aiDraft', 'finalMemo']);",
+                      "    ",
+                      "    // Verify timestamps are in chronological order",
+                      "    const timestamps = responseJson.data.memos.map(memo => new Date(memo.timestamp));",
+                      "    pm.expect(timestamps[0]).to.be.below(timestamps[1]);",
+                      "    pm.expect(timestamps[1]).to.be.below(timestamps[2]);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set default environment variables if not already set",
+          "if (!pm.environment.get('BASE_URL')) {",
+          "    pm.environment.set('BASE_URL', 'http://localhost:5050');",
+          "}",
+          "",
+          "if (!pm.environment.get('TEST_EMAIL')) {",
+          "    pm.environment.set('TEST_EMAIL', 'test@example.com');",
+          "}",
+          "",
+          "if (!pm.environment.get('TEST_PASSWORD')) {",
+          "    pm.environment.set('TEST_PASSWORD', 'testpassword123');",
+          "}",
+          "",
+          "// Add timestamp to requests for debugging",
+          "pm.environment.set('TIMESTAMP', new Date().toISOString());"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:5050",
+      "type": "string"
+    },
+    {
+      "key": "TEST_EMAIL",
+      "value": "test@example.com",
+      "type": "string"
+    },
+    {
+      "key": "TEST_PASSWORD",
+      "value": "testpassword123",
+      "type": "string"
+    },
+    {
+      "key": "TEST_GOAL_ID",
+      "value": "Replace with actual goal ID",
+      "type": "string"
+    },
+    {
+      "key": "TEST_REPORT_ID",
+      "value": "Will be set by test",
+      "type": "string"
+    },
+    {
+      "key": "WORKFLOW_REPORT_ID",
+      "value": "Replace with workflow test report ID",
+      "type": "string"
+    },
+    {
+      "key": "EMPTY_REPORT_ID",
+      "value": "Replace with empty report ID for error testing",
+      "type": "string"
+    }
+  ]
+} 

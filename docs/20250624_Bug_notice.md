@@ -1,4 +1,4 @@
-# 1. AI report: Actionable Suggestions (incomplete)
+# 1. AI report: Actionable Suggestions (solved)
 
 這裡的截斷並不是因為你選用的 4o-mini 模型的上下文窗口，而是 Actionable Suggestions 那個側邊欄本身對「建議文字長度」做了限制，超過某個字數就自動截掉了。
 
