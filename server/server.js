@@ -185,11 +185,17 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error("Error connecting to MongoDB:", error);
     console.error("Server startup failed due to MongoDB connection issues");
     
-    // Attempt to start server anyway for debugging purposes
-    console.log("Attempting to start server without MongoDB...");
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT} (without MongoDB)!`);
-    });
+    // Check if fallback behavior is allowed
+    if (process.env.NODE_ENV === "development" || process.env.ALLOW_SERVER_START_WITHOUT_DB === "true") {
+      console.log("Attempting to start server without MongoDB (development mode)...");
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT} (without MongoDB)!`);
+      });
+    } else {
+      console.error("Production environment: Server startup aborted due to MongoDB connection failure.");
+      console.error("This prevents API endpoints from returning 500 errors due to missing database connection.");
+      process.exit(1);
+    }
   });
 
 // Handle MongoDB connection events

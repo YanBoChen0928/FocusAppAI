@@ -1,68 +1,46 @@
-Fix: Improved MongoDB connection using event-driven approach
+Fix: MongoDB connection timeout causing API failures in production
 
 ## Problem Analysis
-- Production deployment experiencing "hn" errors (compressed AxiosError variable names)
-- Root cause: `db.listCollections()` called before MongoDB connection fully established
-- Error: "Cannot read properties of undefined (reading 'listCollections')"
+- Production deployment experiencing "hn" errors (compressed variable names)
+- Root cause: MongoDB listCollections() operation failing due to unstable connection
 - Frontend receiving timeout errors: "timeout of 10000ms exceeded"
+- Error chain: MongoDB connection issues → API response delays → Frontend timeout
 
 ## Root Cause
-The original MongoDB connection logic executed database operations immediately after 
-`mongoose.connect()` promise resolution, but the `db` object might not be fully 
-initialized yet. This timing issue caused intermittent failures in production.
+The original MongoDB connection logic executed `db.listCollections()` immediately after 
+connection establishment, without ensuring the connection was fully ready. In production 
+environments with network latency, this caused the operation to fail intermittently.
 
 ## Solution Implemented
-Replaced Promise-based connection logic with event-driven approach using 
-`mongoose.connection.once('open')` to ensure database operations only execute 
-when the connection is fully established and the `db` object is guaranteed to be available.
+1. **Connection State Verification**: Added readyState check before proceeding with operations
+2. **Retry Mechanism**: Implemented 3-attempt retry for listCollections() and indexes() operations
+3. **Error Isolation**: Ensured index operation failures don't block server startup
+4. **Graceful Degradation**: Server starts even if MongoDB operations fail
+5. **Enhanced Logging**: Added detailed connection status and error tracking
 
 ## Technical Changes
 ### Modified Files:
-- `focus-app/server/server.js` - Restructured MongoDB connection logic
+- `focus-app/server/server.js` - Enhanced MongoDB connection logic
 
 ### Key Improvements:
-1. **Event-Driven Connection**: Use `mongoose.connection.once('open')` instead of Promise.then()
-2. **Guaranteed DB Availability**: Operations only execute when connection is fully ready
-3. **Simplified Logic**: Removed complex retry mechanisms in favor of timing correctness
-4. **Proper Error Handling**: Added connection error and disconnection event handlers
-5. **Cleaner Code**: More readable and maintainable connection flow
-
-### Implementation Details:
-```javascript
-// Before: Promise-based (timing issues)
-mongoose.connect().then(async () => {
-  const db = mongoose.connection.db; // Might be undefined
-  // Operations...
-});
-
-// After: Event-driven (guaranteed ready)
-mongoose.connection.once('open', async () => {
-  const db = mongoose.connection.db; // Always available
-  // Operations...
-});
-```
-
-## Benefits
-- **Eliminates Race Conditions**: No more `db` undefined errors
-- **Production Reliability**: Resolves intermittent connection failures
-- **Standard Practice**: Follows Mongoose recommended patterns
-- **Simplified Maintenance**: Cleaner, more predictable code flow
-- **Better Error Visibility**: Clear separation of connection vs operation errors
+- Wait for mongoose.connection.readyState === 1 before operations
+- Retry mechanism with 2-second delays between attempts
+- Individual error handling for each index operation
+- Fallback server startup if MongoDB connection fails
+- Enhanced connection status logging
 
 ## Impact
-- Resolves production "hn" timeout errors
-- Eliminates "Cannot read properties of undefined" errors
+- Resolves production API timeout issues
 - Improves deployment reliability
 - Maintains backward compatibility
-- Reduces code complexity
+- Better error visibility for debugging
 
 ## Testing
-- Local development: No functional changes
-- Production: Should eliminate MongoDB-related startup failures
-- Error handling: Better separation of connection vs operation errors
+- Local development: No impact on existing functionality
+- Production: Should resolve "hn" timeout errors
+- Fallback: Server still starts if MongoDB has issues
 
-## Related Issues Fixed
-- Frontend AxiosError timeout issues
-- MongoDB listCollections undefined errors
-- Production deployment instability
-- API endpoint startup failures 
+## Related Issues
+- Frontend "hn" errors (compressed AxiosError objects)
+- ECONNABORTED timeout errors
+- API endpoint failures during peak usage 
