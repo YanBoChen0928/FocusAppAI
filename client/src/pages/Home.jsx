@@ -516,8 +516,7 @@ function Home() {
       {user && (
         <Box 
           sx={{ 
-            width: '100%',
-            maxWidth: '1200px',
+            width: '95vw',
             margin: '0 auto',
             px: { xs: 1.5, sm: 2, md: 2.5 },
             mb: { xs: 1, sm: 1.5, md: 2 }
@@ -525,10 +524,6 @@ function Home() {
         >
           <Box 
             sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'flex-start', sm: 'center' },
-              gap: { xs: 1, sm: 1.5, md: 2 },
               p: { xs: 1.5, sm: 2 },
               backgroundColor: 'rgba(13, 94, 109, 0.05)',
               borderRadius: 2,
@@ -537,63 +532,97 @@ function Home() {
               boxSizing: 'border-box'
             }}
           >
-            <InfoIcon sx={{ color: '#0D5E6D', fontSize: { xs: 20, sm: 24 }, flexShrink: 0, mt: { xs: 0.5, sm: 0 } }} />
-            
+            {/* Title Row */}
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                mb: 1.5,
+                gap: 1
+              }}
+            >
+              <InfoIcon sx={{ color: '#0D5E6D', fontSize: 20 }} />
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  color: '#0D5E6D', 
+                  fontWeight: 600,
+                  fontSize: { xs: '0.9rem', sm: '1rem' }
+                }}
+              >
+                Quick Start Guide
+              </Typography>
+            </Box>
+
+            {/* Steps Row */}
             <Box sx={{ 
               display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' }, 
+              flexDirection: { xs: 'column', md: 'row' }, 
               gap: { xs: 1, sm: 1.5, md: 2 }, 
-              flex: 1, 
-              alignItems: { xs: 'flex-start', sm: 'center' },
-              flexWrap: 'wrap'
+              alignItems: { xs: 'flex-start', md: 'center' },
+              flexWrap: 'wrap',
+              mb: 1
             }}>
               <Chip 
                 icon={<LooksOneIcon />}
-                label="Step 1: Add goals on the left"
+                label="Add goals on the left"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   color: '#0D5E6D', 
                   borderColor: '#0D5E6D',
                   fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', sm: 'auto' }
+                  minWidth: { xs: '100%', md: 'auto' }
                 }}
               />
               <Chip 
                 icon={<LooksTwoIcon />}
-                label="Step 2: Click goal to view details and daily records"
+                label="Click goal to view details and daily records"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   color: '#0D5E6D', 
                   borderColor: '#0D5E6D',
                   fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', sm: 'auto' }
+                  minWidth: { xs: '100%', md: 'auto' }
                 }}
               />
               <Chip 
                 icon={<Looks3Icon />}
-                label="Step 3: Complete records for FocusAI analysis (7/30 days)"
+                label="Complete records for FocusAI analysis (7 days, 30 days, and customized)"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   color: '#0D5E6D', 
                   borderColor: '#0D5E6D',
                   fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', sm: 'auto' }
+                  minWidth: { xs: '100%', md: 'auto' }
                 }}
               />
+            </Box>
+
+            {/* Bonus Row */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: { xs: 'flex-start', md: 'center' },
+              mt: 0.5
+            }}>
               <Chip 
                 icon={<StarIcon />}
-                label="Bonus: Use FAB for deep analysis & next week planning"
+                label="Bonus: Use FAB (Floating Action Button on the right bottom corner) for deep analysis & next week planning"
                 size="small"
                 sx={{ 
                   backgroundColor: 'rgba(255, 127, 102, 0.1)', 
                   color: '#FF7F66',
                   borderColor: '#FF7F66',
                   border: '1px solid',
-                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', sm: 'auto' }
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  maxWidth: '100%',
+                  height: 'auto',
+                  '& .MuiChip-label': {
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word'
+                  }
                 }}
               />
             </Box>
