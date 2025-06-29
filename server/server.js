@@ -182,18 +182,80 @@ mongoose
   .then(async () => {
     console.log("Connected to MongoDB successfully!");
     
-    // Handle collection indexes
+    // Wait for connection to be fully ready before proceeding
+    await new Promise((resolve, reject) => {
+      if (mongoose.connection.readyState === 1) {
+        resolve();
+      } else {
+        const timeout = setTimeout(() => {
+          reject(new Error('MongoDB connection timeout'));
+        }, 10000); // 10 second timeout
+        
+        mongoose.connection.on('connected', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      }
+    });
+    
+    // Handle collection indexes with improved error handling
     try {
       const db = mongoose.connection.db;
+      
+      // Check if database connection is ready
+      if (!db) {
+        throw new Error('Database connection not available');
+      }
+      
       console.log("Start checking and removing all possible unique indexes...");
       
-      // First check if collection exists
-      const collections = await db.listCollections().toArray();
+      // Add retry mechanism for listCollections
+      let collections;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          collections = await db.listCollections().toArray();
+          break; // Success, exit retry loop
+        } catch (listError) {
+          retryCount++;
+          console.log(`Attempt ${retryCount} to list collections failed:`, listError.message);
+          
+          if (retryCount >= maxRetries) {
+            throw new Error(`Failed to list collections after ${maxRetries} attempts: ${listError.message}`);
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
       const goalsCollectionExists = collections.some(col => col.name === 'goals');
       
       if (goalsCollectionExists) {
-        // Get all indexes on the goals collection
-        const indexes = await db.collection('goals').indexes();
+        // Get all indexes on the goals collection with retry
+        let indexes;
+        retryCount = 0;
+        
+        while (retryCount < maxRetries) {
+          try {
+            indexes = await db.collection('goals').indexes();
+            break;
+          } catch (indexError) {
+            retryCount++;
+            console.log(`Attempt ${retryCount} to get indexes failed:`, indexError.message);
+            
+            if (retryCount >= maxRetries) {
+              console.warn(`Failed to get indexes after ${maxRetries} attempts, skipping index operations`);
+              indexes = [];
+              break;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        
         console.log("Existing indexes:", JSON.stringify(indexes));
         
         // Define indexes to be dropped
@@ -204,28 +266,35 @@ mongoose
           'userId_1_title_1_unique'
         ];
         
-        // Attempt to drop each index
+        // Attempt to drop each index with individual error handling
         for (const indexName of indexesToDrop) {
           try {
             await db.collection('goals').dropIndex(indexName);
             console.log(`Successfully deleted index: ${indexName}`);
           } catch (err) {
             console.log(`Attempted to delete index ${indexName}: ${err.message}`);
+            // Continue with next index, don't fail the entire process
           }
         }
         
-        // Create new non-unique index
-        await db.collection('goals').createIndex(
-          { userId: 1, title: 1 }, 
-          { unique: false, background: true }
-        );
-        console.log("Successfully rebuilt non-unique index");
+        // Create new non-unique index with error handling
+        try {
+          await db.collection('goals').createIndex(
+            { userId: 1, title: 1 }, 
+            { unique: false, background: true }
+          );
+          console.log("Successfully rebuilt non-unique index");
+        } catch (createIndexError) {
+          console.warn("Failed to create new index:", createIndexError.message);
+          // Don't fail server startup for index creation issues
+        }
       } else {
         console.log("Goals collection does not exist yet, skipping index cleanup");
       }
       
     } catch (indexError) {
-      console.log("Error during index processing:", indexError.message);
+      console.warn("Error during index processing:", indexError.message);
+      console.warn("Continuing server startup despite index issues...");
       // Continue execution, don't block server startup due to index issues
     }
     
@@ -234,6 +303,7 @@ mongoose
       try {
         const server = app.listen(port, () => {
           console.log(`Server is running on port ${port}!`);
+          console.log("MongoDB connection status:", mongoose.connection.readyState === 1 ? "Connected" : "Disconnected");
         });
         
         server.on('error', (error) => {
@@ -253,4 +323,11 @@ mongoose
   })
   .catch((error) => {
     console.error("Error connecting to MongoDB:", error);
+    console.error("Server startup failed due to MongoDB connection issues");
+    
+    // Attempt to start server anyway for debugging purposes
+    console.log("Attempting to start server without MongoDB...");
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT} (without MongoDB)!`);
+    });
   });
