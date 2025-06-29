@@ -160,7 +160,7 @@ function GuestLogin() {
         onClick={handleGuestLogin}
         disabled={loading}
       >
-        {loading ? 'Setting up guest access...' : 'Try it instantly'}
+        {loading ? 'Setting up guest access...' : 'Try it instantly for free'}
       </button>
       
       <div className={styles.loginOptions}>
