@@ -14,6 +14,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import FolderIcon from "@mui/icons-material/Folder";
+import LooksOneIcon from "@mui/icons-material/LooksOne";
 import GoalCard from "./GoalCard";
 import OnboardingModal from "../OnboardingModal";
 import Search from "./Search";
@@ -185,7 +186,8 @@ export default function Sidebar({
         ...sx
       }}
     >
-      <Typography variant="h6" sx={{ mb: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+        <LooksOneIcon sx={{ mr: 1, fontSize: '1.2rem', color: '#0D5E6D' }} />
         Goals
       </Typography>
 
