@@ -147,6 +147,36 @@ export default function GoalDetails({
     refreshGoalData();
   }, [goalId]);
 
+  // Add page visibility detection to refresh data when user returns
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && selectedGoal) {
+        console.log("Page became visible, refreshing goal data");
+        const goalId = selectedGoal._id || selectedGoal.id;
+        if (goalId) {
+          // Refresh goal data when page becomes visible
+          apiService.goals.getById(goalId)
+            .then(response => {
+              if (response?.data?.data) {
+                console.log("Successfully refreshed goal data on page focus");
+                setSelectedGoal(response.data.data);
+                setDailyCards(response.data.data.dailyCards || []);
+              }
+            })
+            .catch(error => {
+              console.error("Error refreshing goal data on page focus:", error);
+            });
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [selectedGoal]);
+
   // when selected goal changes, update daily cards data
   useEffect(() => {
     if (selectedGoal && selectedGoal.dailyCards) {
