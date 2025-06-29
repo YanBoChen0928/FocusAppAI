@@ -557,46 +557,57 @@ function Home() {
             {/* Steps Row */}
             <Box sx={{ 
               display: 'flex', 
-              flexDirection: { xs: 'column', md: 'row' }, 
+              flexDirection: { xs: 'column', sm: 'row' }, 
               gap: { xs: 1, sm: 1.5, md: 2 }, 
-              alignItems: { xs: 'flex-start', md: 'center' },
+              alignItems: 'flex-start',
               flexWrap: 'wrap',
               mb: 1
             }}>
               <Chip 
                 icon={<LooksOneIcon />}
-                label="Add goals on the left"
+                label="Add Goals (Left Panel)"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   color: '#0D5E6D', 
                   borderColor: '#0D5E6D',
                   fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', md: 'auto' }
+                  minWidth: 'auto',
+                  whiteSpace: 'nowrap'
                 }}
               />
               <Chip 
                 icon={<LooksTwoIcon />}
-                label="Click goal to view details and daily records"
+                label="Select Goal to View Details (Center Panel)"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   color: '#0D5E6D', 
                   borderColor: '#0D5E6D',
                   fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', md: 'auto' }
+                  minWidth: 'auto',
+                  maxWidth: { xs: '100%', sm: 'none' },
+                  '& .MuiChip-label': {
+                    whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                    wordBreak: { xs: 'break-word', sm: 'normal' }
+                  }
                 }}
               />
               <Chip 
                 icon={<Looks3Icon />}
-                label="Complete records for FocusAI analysis (7 days, 30 days, and customized)"
+                label="Complete Daily Records for AI Analysis (Right Panel)"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   color: '#0D5E6D', 
                   borderColor: '#0D5E6D',
                   fontSize: { xs: '0.75rem', sm: '0.8rem' },
-                  minWidth: { xs: '100%', md: 'auto' }
+                  minWidth: 'auto',
+                  maxWidth: { xs: '100%', sm: 'none' },
+                  '& .MuiChip-label': {
+                    whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                    wordBreak: { xs: 'break-word', sm: 'normal' }
+                  }
                 }}
               />
             </Box>
@@ -604,12 +615,12 @@ function Home() {
             {/* Bonus Row */}
             <Box sx={{ 
               display: 'flex', 
-              justifyContent: { xs: 'flex-start', md: 'center' },
+              justifyContent: 'flex-start',
               mt: 0.5
             }}>
               <Chip 
                 icon={<StarIcon />}
-                label="Bonus: Use FAB (Floating Action Button on the right bottom corner) for deep analysis & next week planning"
+                label="Try the FAB (Floating Action Button at the bottom right corner) for deeper planning. The button will appear after you generate your first AI progress analysis"
                 size="small"
                 sx={{ 
                   backgroundColor: 'rgba(255, 127, 102, 0.1)', 
@@ -621,7 +632,9 @@ function Home() {
                   height: 'auto',
                   '& .MuiChip-label': {
                     whiteSpace: 'normal',
-                    wordBreak: 'break-word'
+                    wordBreak: 'break-word',
+                    lineHeight: 1.3,
+                    py: 0.5
                   }
                 }}
               />
