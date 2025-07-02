@@ -223,87 +223,96 @@ export default function GoalCard({ goal, onPriorityChange, onDateChange, onGoalA
         {/* Header Area */}
         <div className={styles.goalCardHeader}>
           <h5 className={styles.goalTitle}>
-            <Tooltip title={isArchived ? "Goal Archived" : "Complete and archive"}>
+            <div className={styles.titleRow}>
               <div className={styles.titleActions}>
-                <IconButton
-                  className={styles.iconButton}
-                  onClick={(e) => { e.stopPropagation(); handleArchive(); }}
-                  disabled={isArchiving || isArchived}
-                  size="small"
+                <Tooltip title={isArchived ? "Goal Archived" : "Complete and archive"}>
+                  <IconButton
+                    className={styles.iconButton}
+                    onClick={(e) => { e.stopPropagation(); handleArchive(); }}
+                    disabled={isArchiving || isArchived}
+                    size="small"
+                  >
+                    {isArchiving ? <CircularProgress size={20} /> : <ArchiveIcon fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+                
+                {/* Priority Section */}
+                <Box 
+                  component="span" 
+                  className={styles.priorityContainer}
+                  sx={{
+                    boxSizing: 'border-box',
+                    '& .MuiChip-root': {
+                      minWidth: 'fit-content',
+                      whiteSpace: 'nowrap'
+                    }
+                  }}
                 >
-                  {isArchiving ? <CircularProgress size={20} /> : <ArchiveIcon fontSize="small" />}
-                </IconButton>
+                  <Chip
+                    size="small"
+                    label={priority}
+                    className={`${styles.priorityChip} ${
+                      priority === "High" 
+                        ? styles.priorityHigh 
+                        : priority === "Medium" 
+                          ? styles.priorityMedium 
+                          : styles.priorityLow
+                    }`}
+                    onClick={handleOpenMenu}
+                    clickable
+                  />
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleCloseMenu}
+                    onClick={(e) => e.stopPropagation()}
+                    PaperProps={{
+                      elevation: 8,
+                      sx: {
+                        overflow: 'visible',
+                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
+                        borderRadius: '8px',
+                        mt: 1.5,
+                        border: '1px solid rgba(0, 0, 0, 0.05)',
+                        '& .MuiAvatar-root': {
+                          width: 32,
+                          height: 32,
+                          ml: -0.5,
+                          mr: 1,
+                        },
+                      },
+                    }}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                  >
+                    <MenuItem 
+                      onClick={() => handlePriorityChange("High")}
+                      className={styles.priorityHighMenuItem}
+                      selected={priority === 'High'}
+                    >
+                      High
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => handlePriorityChange("Medium")}
+                      className={styles.priorityMediumMenuItem}
+                      selected={priority === 'Medium'}
+                    >
+                      Medium
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => handlePriorityChange("Low")}
+                      className={styles.priorityLowMenuItem}
+                      selected={priority === 'Low'}
+                    >
+                      Low
+                    </MenuItem>
+                  </Menu>
+                </Box>
               </div>
-            </Tooltip>
+            </div>
             <span className={styles.goalTitleText}>
               {goalTitle}
             </span>
-            
-            {/* Priority Section */}
-            <Box 
-              component="span" 
-              className={styles.priorityContainer}
-            >
-              <Chip
-                size="small"
-                label={priority}
-                className={`${styles.priorityChip} ${
-                  priority === "High" 
-                    ? styles.priorityHigh 
-                    : priority === "Medium" 
-                      ? styles.priorityMedium 
-                      : styles.priorityLow
-                }`}
-                onClick={handleOpenMenu}
-                clickable
-              />
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleCloseMenu}
-                onClick={(e) => e.stopPropagation()}
-                PaperProps={{
-                  elevation: 8,
-                  sx: {
-                    overflow: 'visible',
-                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
-                    borderRadius: '8px',
-                    mt: 1.5,
-                    border: '1px solid rgba(0, 0, 0, 0.05)',
-                    '& .MuiAvatar-root': {
-                      width: 32,
-                      height: 32,
-                      ml: -0.5,
-                      mr: 1,
-                    },
-                  },
-                }}
-                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-              >
-                <MenuItem 
-                  onClick={() => handlePriorityChange("High")}
-                  className={styles.priorityHighMenuItem}
-                  selected={priority === 'High'}
-                >
-                  High
-                </MenuItem>
-                <MenuItem 
-                  onClick={() => handlePriorityChange("Medium")}
-                  className={styles.priorityMediumMenuItem}
-                  selected={priority === 'Medium'}
-                >
-                  Medium
-                </MenuItem>
-                <MenuItem 
-                  onClick={() => handlePriorityChange("Low")}
-                  className={styles.priorityLowMenuItem}
-                  selected={priority === 'Low'}
-                >
-                  Low
-                </MenuItem>
-              </Menu>
-            </Box>
           </h5>
         </div>
 

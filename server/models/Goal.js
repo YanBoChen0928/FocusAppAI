@@ -24,8 +24,7 @@ const GoalSchema = new mongoose.Schema(
   {
     userId: {
       type: String,  // Use String type to store user ID (ObjectId or tempId)
-      required: true,
-      index: true  // Normal non-unique index
+      required: true
     },
     title: {
       type: String,

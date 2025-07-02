@@ -1,0 +1,123 @@
+WeeklyMemo Phase 2.2: CORS fix and UI interaction improvements
+
+Phase 2.2 implementation includes critical bug fixes and user experience enhancements
+for the WeeklyMemo feature, resolving CORS issues and MUI Stepper interaction problems.
+
+## Bug Fix #1: CORS Configuration - PATCH Method Support
+
+### Issue
+WeeklyMemo update functionality failed due to missing PATCH method in CORS configuration.
+When existing memos were edited, frontend would call PATCH API but server rejected
+requests with "Method PATCH is not allowed by Access-Control-Allow-Methods" error.
+
+### Root Cause
+Server CORS configuration in server.js line 64 was missing "PATCH" method:
+- New memos: Used POST method (worked)
+- Existing memos: Used PATCH method (blocked by CORS)
+
+### Solution
+Updated CORS methods array in focus-app/server/server.js:
+```javascript
+// Before
+methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+
+// After  
+methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+```
+
+### Verification
+- ✅ CORS Preflight: Access-Control-Allow-Methods includes PATCH
+- ✅ PATCH requests: No longer blocked by CORS
+- ✅ Authentication flow: Returns proper 401 errors (not CORS errors)
+
+## Bug Fix #2: MUI Stepper Interaction - Step Expansion Control
+
+### Issue
+AI Draft and Final Memo steps in WeeklyMemo could not be clicked to expand/collapse.
+Only Original Memo step responded to clicks properly.
+
+### Root Cause
+MUI Stepper component architecture misunderstanding:
+- Used only `expandedSteps.has(index)` for content rendering
+- Missing `expanded` prop on Step component for animation control
+- StepContent requires both Step.expanded and conditional rendering
+
+### Solution
+Added expanded attribute to Step component in WeeklyMemo.jsx:
+```javascript
+// Before
+<Step key={phase.key} completed={false}>
+
+// After
+<Step key={phase.key} completed={false} expanded={expandedSteps.has(index)}>
+```
+
+### Technical Implementation
+Dual control mechanism required:
+- `Step.expanded` → Controls StepContent expand/collapse animation
+- `expandedSteps.has(index)` → Controls actual content rendering
+- Both needed for complete functionality
+
+### Results
+- ✅ Original Memo: Continues working normally
+- ✅ AI Draft: Now expands/collapses correctly on click
+- ✅ Final Memo: Now expands/collapses correctly on click
+- ✅ State sync: UI expansion state matches internal state
+
+## Bug Fix #3: User Experience - Error Message Improvements
+
+### Issue
+Users received unclear technical error messages when WeeklyMemo feature was accessed
+without proper AI Progress Analysis data.
+
+### Solution
+Enhanced error handling in three locations in WeeklyMemo.jsx:
+
+1. **WeeklyMemoFab click handling**:
+   ```javascript
+   // Added friendly alert when no reportId
+   alert('Please generate AI Progress Analysis first');
+   ```
+
+2. **loadMemos error handling**:
+   ```javascript
+   // Specific message for 404 errors
+   if (error.response?.status === 404) {
+     setError('Please generate AI Progress Analysis first');
+   }
+   ```
+
+3. **Authentication error messages**:
+   ```javascript
+   // Unified English error messages
+   alert('Authentication failed, please login again');
+   alert('Please generate AI Progress Analysis first');
+   alert(`Save failed: ${error.message}`);
+   ```
+
+### User Experience Improvements
+- ✅ Clear guidance: Users know exactly what to do next
+- ✅ Error categorization: Different error types handled appropriately  
+- ✅ Language consistency: All error messages in English
+- ✅ Actionable feedback: Users understand required actions
+
+## Technical Details
+
+### Modified Files
+- `focus-app/server/server.js` - CORS configuration
+- `focus-app/client/src/components/WeeklyMemo.jsx` - UI interactions and error handling
+
+### Testing Verification
+- Manual testing of all three memo phases
+- CORS verification using curl commands
+- Error scenario testing (missing reports, authentication)
+- UI interaction testing across all stepper steps
+
+### Impact
+- Enhanced user experience with clear error guidance
+- Resolved CORS blocking for memo updates
+- Fixed MUI Stepper multi-step expansion capability
+- Improved overall WeeklyMemo feature reliability
+
+This phase 2.2 implementation completes the foundation for phase 2.3 Next Week Planning feature.
+All existing functionality is stable and user-tested.

@@ -9,6 +9,8 @@
   align-items: stretch;
   width: 100%;
   box-sizing: border-box;
+  overflow: visible;
+  height: fit-content;
 }
 
 .header {
@@ -16,6 +18,7 @@
   flex-direction: column;
   align-items: flex-start;
   margin-bottom: 12px;
+  width: 100%;
 }
 
 .title {
@@ -44,25 +47,29 @@
   gap: 6px;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow: visible;
   margin-bottom: 1rem;
+  height: fit-content;
 }
 
 /* Ensure cards maintain a consistent width */
 .cardsContainer > * {
-  min-width: 0; /* Allow children to shrink to prevent overflow */
+  min-width: 0;
   width: 100%;
+  overflow: visible;
 }
 
 /* Progress container */
 .progressContainer {
   margin-top: 1rem;
+  overflow: visible;
 }
 
 /* Card wrapper */
 .cardWrapper {
   width: 100%;
   min-width: 0;
+  overflow: visible;
 }
 
 /* Today button */

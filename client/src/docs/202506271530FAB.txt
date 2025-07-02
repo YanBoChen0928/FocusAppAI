@@ -1,0 +1,111 @@
+fix: Dynamic FAB icon sizing and responsive text box implementation
+
+## Key Technical Discovery: FAB Icon Sizing Mechanism
+
+### Problem Identified
+FAB icon size changes from 1.5rem → 2rem → 3rem had no visual effect on emoji icons.
+
+### Root Cause Analysis
+MUI FAB component handles emoji icons differently from SVG icons:
+
+1. **MUI FAB Internal Structure**:
+   ```jsx
+   <Fab>
+     <span class="MuiFab-label">
+       🎯  // Emoji rendered as text, not SVG
+     </span>
+   </Fab>
+   ```
+
+2. **CSS Specificity Issue**:
+   - MUI's default styles override custom fontSize
+   - Emoji characters need explicit inline styling
+   - CSS cascade doesn't apply to emoji the same way as SVG icons
+
+### Solution Implementation
+```jsx
+// BEFORE (Not Working)
+sx={{
+  '& .MuiFab-label': {
+    fontSize: '3rem'  // Overridden by MUI defaults
+  }
+}}
+
+// AFTER (Working Solution)
+sx={{
+  width: 64,
+  height: 64,
+  '& .MuiFab-label': {
+    fontSize: '2.5rem !important',
+    lineHeight: '1 !important'
+  },
+  '& svg, & span': {
+    fontSize: '2.5rem !important'
+  }
+}}
+>
+  <span style={{ fontSize: '2.5rem', lineHeight: 1 }}>🎯</span>
+</Fab>
+```
+
+### Why Size Property Works Better Than Rem
+1. **Explicit Dimension Control**: `width: 64, height: 64` gives precise control
+2. **Emoji Rendering**: Inline `style` attribute has highest CSS specificity
+3. **Cross-browser Compatibility**: Explicit sizing works consistently
+4. **MUI Integration**: Follows MUI's recommended pattern for custom sizing
+
+### Technical Implementation Details
+
+#### FAB Container Structure
+```jsx
+<Box sx={{ 
+  position: 'fixed', 
+  display: 'flex', 
+  gap: 1,
+  bottom: 24,
+  right: 24 
+}}>
+  {/* Secondary FAB with dynamic text box */}
+  {/* Main FAB with consistent sizing */}
+</Box>
+```
+
+#### Dynamic Text Box Logic
+```jsx
+WebkitLineClamp: (() => {
+  const contentLength = nextWeekContent.length;
+  if (contentLength <= 60) return 2;    // Short content: 2 lines
+  if (contentLength <= 120) return 3;   // Medium content: 3 lines
+  if (contentLength <= 180) return 4;   // Long content: 4 lines
+  return Math.min(Math.ceil(contentLength / 45), 6); // Max 6 lines
+})()
+```
+
+#### Responsive Design Implementation
+```jsx
+maxWidth: {
+  xs: '60vw',    // Mobile: 60% viewport width
+  sm: '50vw',    // Tablet: 50% viewport width
+  md: '40vw'     // Desktop: 40% viewport width
+}
+```
+
+### Files Modified
+- focus-app/client/src/components/WeeklyMemo.jsx
+
+### Key Learnings
+1. **Emoji vs SVG**: Different rendering mechanisms require different approaches
+2. **CSS Specificity**: Inline styles > CSS classes for emoji sizing
+3. **MUI Patterns**: Follow framework conventions for best results
+4. **Responsive Design**: Use viewport units for cross-device compatibility
+
+### Performance Considerations
+- Dynamic line calculation runs on each render
+- Consider memoization for large content sets
+- Viewport-based sizing ensures smooth responsive behavior
+
+This implementation provides:
+✅ Visually larger FAB icons (2.5rem)
+✅ Dynamic text box with content-aware line count
+✅ Responsive design with max 50vw width constraint
+✅ Consistent cross-browser behavior 

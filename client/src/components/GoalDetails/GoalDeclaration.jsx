@@ -37,13 +37,20 @@ const EditableField = ({ value, onChange, multiline = false }) => {
   const [fieldValue, setFieldValue] = useState(value || '');
   const [isFocused, setIsFocused] = useState(false);
   
+  // Add effect to sync with parent value
+  useEffect(() => {
+    setFieldValue(value || '');
+  }, [value]);
+  
   const handleChange = (e) => {
-    setFieldValue(e.target.value);
+    const newValue = e.target.value;
+    setFieldValue(newValue);
+    // Call onChange immediately to update parent state
+    onChange(newValue);
   };
   
   const handleBlur = () => {
     setIsFocused(false);
-    onChange(fieldValue);
   };
   
   const handleKeyPress = (e) => {

@@ -1,0 +1,133 @@
+WeeklyMemo Phase 2.3: Next Week Planning implementation
+
+Implement complete 4-stage workflow for WeeklyMemo feature with Next Week Planning 
+functionality, including AI-powered plan generation and dual FAB button support.
+
+## Phase 2.3 Implementation Summary
+
+### Core Features Implemented
+- **4-Stage Workflow**: Extended WeeklyMemo from 3 to 4 stages
+  - originalMemo → aiDraft → finalMemo → nextWeekPlan
+- **AI-Powered Planning**: One-sentence focused plan generation
+- **Dual FAB System**: Main FAB + conditional secondary FAB
+- **Click-to-Generate**: Auto-trigger on Next Week Planning label click
+- **User Editing**: Full edit capabilities matching existing stages
+
+### Backend Changes
+
+#### ReportService.js
+- Added `generateNextWeekPlan(reportId)` method
+- Added `_prepareNextWeekPlanPrompt(report, memoContent)` helper
+- Added `_generatePlanContent(prompt)` optimized for short responses
+- Integrated with existing memo system using any of first 3 phases
+- AI model: gpt-4o-mini with 100 max_tokens for concise output
+
+#### reportsController.js
+- Added `generateNextWeekPlan` controller function
+- Implemented proper authentication and ownership validation
+- Added specific error handling for missing memo content
+- Maintained consistent API response format
+
+#### routes/reports.js
+- Added `POST /api/reports/:reportId/memos/next-week-plan` endpoint
+- Integrated with existing authentication middleware
+- Added comprehensive error handling and validation
+- Maintained RESTful API design consistency
+
+### Frontend Changes
+
+#### WeeklyMemo.jsx
+- Extended `phases` array to include nextWeekPlan configuration
+- Added `handleGenerateNextWeekPlan()` function
+- Implemented auto-generation on StepLabel click
+- Updated state management for 4-stage workflow
+- Enhanced auto-expansion logic for progressive disclosure
+- Added conditional rendering for Next Week Plan generation button
+- Maintained UI consistency with existing memo stages
+
+#### api.js
+- Added `generateNextWeekPlan(reportId)` API method
+- Configured 30-second timeout for AI generation
+- Implemented comprehensive error logging
+- Maintained consistent API service patterns
+
+#### WeeklyMemoFab Component
+- Added secondary FAB for Next Week Plan quick access
+- Implemented conditional display based on plan existence
+- Positioned secondary FAB on left side of main FAB (right: 88px)
+- Added `hasNextWeekPlan` state management with API checking
+- Prepared architecture for future DnD functionality
+- Maintained existing main FAB functionality
+
+### Technical Implementation Details
+
+#### AI Generation Strategy
+- **Input**: Any available memo from first 3 phases (automatic selection)
+- **Output**: Exactly one actionable sentence
+- **Prompt**: Focused on specific, actionable priorities
+- **Model**: gpt-4o-mini for efficiency and cost optimization
+- **Format**: "Focus on [action] to improve [area] based on [insight]"
+
+#### User Experience Flow
+1. Complete any of first 3 memo stages
+2. Click "Next Week Planning" label to auto-generate
+3. Or manually create/edit Next Week Plan
+4. Secondary FAB appears when plan exists
+5. Both FABs open complete 4-stage dialog
+
+#### Backward Compatibility
+- All existing 3-stage functionality preserved
+- No breaking changes to current user workflows
+- Progressive enhancement approach
+- Maintains existing API contracts
+
+### File Modifications
+- focus-app/server/services/ReportService.js
+- focus-app/client/src/components/WeeklyMemo.jsx  
+- focus-app/client/src/services/api.js
+- focus-app/server/controllers/reportsController.js
+- focus-app/server/routes/reports.js
+
+### Architecture Benefits
+- **Extensible**: Ready for Phase 2.4 DnD implementation
+- **Scalable**: Modular design supports future enhancements
+- **Consistent**: Follows established patterns and conventions
+- **User-Friendly**: Intuitive click-to-generate functionality
+- **Efficient**: Optimized AI calls with minimal token usage
+
+### Next Steps Preparation
+- Secondary FAB positioned for DnD implementation
+- API architecture supports future plan management features
+- UI components ready for advanced interaction patterns
+- Database schema already supports 4-stage workflow
+
+### Bug Fix Applied During Implementation
+
+#### PATCH Route Issue Resolution
+**Problem Identified:**
+User encountered 400 Bad Request error when attempting to edit nextWeekPlan:
+```
+PATCH http://localhost:5050/api/reports/.../memos/nextWeekPlan 400 (Bad Request)
+```
+
+**Root Cause:**
+In `routes/reports.js`, the PATCH route's `validPhases` array only included the original 3 phases:
+```javascript
+const validPhases = ['originalMemo', 'aiDraft', 'finalMemo'];
+```
+Missing 'nextWeekPlan' support for the new 4th stage.
+
+**Fix Applied:**
+Updated validPhases array to include nextWeekPlan:
+```javascript
+const validPhases = ['originalMemo', 'aiDraft', 'finalMemo', 'nextWeekPlan'];
+```
+
+**Impact:**
+- Enables full CRUD operations for nextWeekPlan stage
+- Maintains API consistency across all 4 workflow stages
+- Resolves editing functionality for Next Week Planning feature
+- Ensures complete Phase 2.3 implementation integrity
+
+Phase 2.3 successfully delivers complete 4-stage WeeklyMemo workflow with 
+AI-powered Next Week Planning, establishing foundation for Phase 2.4 DnD features. 

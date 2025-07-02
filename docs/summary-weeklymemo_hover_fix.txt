@@ -1,0 +1,73 @@
+WeeklyMemo StepLabel Hover Effect Fix
+
+Fix MUI StepLabel cursor pointer hover effect for all steps (child 1,3,5,7) 
+in WeeklyMemo component to ensure consistent user interaction experience.
+
+## Problem Analysis
+
+### Issue Description
+User reported that steps child(3)(5)(7) in WeeklyMemo dialog did not show 
+cursor pointer hover effect, while child(1) worked correctly. All steps 
+should have consistent hover behavior for better UX.
+
+### Root Cause: MUI Component CSS Hierarchy
+1. **Complex Internal Structure**: MUI StepLabel has nested DOM elements
+2. **Event Target Mismatch**: User hovers on .MuiStepLabel-labelContainer, not outer StepLabel
+3. **CSS Specificity Issue**: Original sx={{ cursor: 'pointer' }} only applied to outer element
+4. **MUI Default Styles**: Internal MUI styles may override simple cursor declarations
+
+### CSS Selector Evidence
+Browser inspection revealed the actual hover target:
+```css
+.MuiStepLabel-labelContainer.css-1r3zt4h-MuiStepLabel-labelContainer
+```
+
+## Solution Implementation
+
+### Before (Insufficient)
+```javascript
+sx={{ cursor: 'pointer' }}
+```
+Only applied to outer StepLabel element.
+
+### After (Comprehensive)
+```javascript
+sx={{ 
+  cursor: 'pointer',                              // Outer StepLabel
+  '&:hover': { cursor: 'pointer' },              // Outer hover state
+  '& .MuiStepLabel-labelContainer': {            // Inner label container
+    cursor: 'pointer'
+  },
+  '& .MuiStepLabel-labelContainer:hover': {      // Inner container hover
+    cursor: 'pointer'
+  }
+}}
+```
+
+## Technical Explanation
+
+### Why This Fix Works
+1. **Multi-Layer Coverage**: Ensures cursor pointer on all relevant elements
+2. **CSS Specificity**: Nested selectors override MUI default styles
+3. **Event Target Alignment**: Covers actual elements user interacts with
+4. **Hover State Handling**: Explicit hover state declarations
+
+### Implementation Details
+- **File Modified**: focus-app/client/src/components/WeeklyMemo.jsx
+- **Scope**: All StepLabel elements in phases.map() loop
+- **Impact**: Consistent hover behavior across all 4 workflow stages
+- **Backward Compatibility**: No functional changes, only enhanced UX
+
+## Result
+All WeeklyMemo steps (Original Memo, AI Draft, Final Memo, Next Week Planning) 
+now display consistent cursor pointer hover effect, improving user interaction 
+clarity and maintaining UI consistency.
+
+## Learning Points
+- MUI components require understanding of internal DOM structure
+- CSS specificity crucial when overriding component library styles
+- Browser inspection essential for identifying correct selectors
+- Multi-layer CSS declarations ensure comprehensive coverage
+
+This fix demonstrates proper handling of complex MUI component styling 
+while maintaining existing functionality and improving user experience. 

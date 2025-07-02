@@ -67,7 +67,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   exposedHeaders: ["Set-Cookie"]
 }));
@@ -177,80 +177,110 @@ app.use((req, res) => {
 });
 
 // Connect to MongoDB & start server
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log("Connected to MongoDB successfully!");
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("MongoDB connection initiated...");
+  })
+  .catch((error) => {
+    console.error("Error connecting to MongoDB:", error);
+    console.error("Server startup failed due to MongoDB connection issues");
     
-    // Handle collection indexes
-    try {
-      const db = mongoose.connection.db;
-      console.log("Start checking and removing all possible unique indexes...");
+    // Check if fallback behavior is allowed
+    if (process.env.NODE_ENV === "development" || process.env.ALLOW_SERVER_START_WITHOUT_DB === "true") {
+      console.log("Attempting to start server without MongoDB (development mode)...");
+      app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT} (without MongoDB)!`);
+      });
+    } else {
+      console.error("Production environment: Server startup aborted due to MongoDB connection failure.");
+      console.error("This prevents API endpoints from returning 500 errors due to missing database connection.");
+      process.exit(1);
+    }
+  });
+
+// Handle MongoDB connection events
+mongoose.connection.once('open', async () => {
+  console.log("Connected to MongoDB successfully!");
+  
+  // Handle collection indexes - db is now guaranteed to be available
+  try {
+    const db = mongoose.connection.db;
+    console.log("Start checking and removing all possible unique indexes...");
+    
+    // List collections - db is now properly initialized
+    const collections = await db.listCollections().toArray();
+    const goalsCollectionExists = collections.some(col => col.name === 'goals');
+    
+    if (goalsCollectionExists) {
+      // Get all indexes on the goals collection
+      const indexes = await db.collection('goals').indexes();
+      console.log("Existing indexes:", JSON.stringify(indexes));
       
-      // First check if collection exists
-      const collections = await db.listCollections().toArray();
-      const goalsCollectionExists = collections.some(col => col.name === 'goals');
+      // Define indexes to be dropped
+      const indexesToDrop = [
+        'userId_1_title_1', 
+        'title_1_userId_1',
+        'title_1',
+        'userId_1_title_1_unique'
+      ];
       
-      if (goalsCollectionExists) {
-        // Get all indexes on the goals collection
-        const indexes = await db.collection('goals').indexes();
-        console.log("Existing indexes:", JSON.stringify(indexes));
-        
-        // Define indexes to be dropped
-        const indexesToDrop = [
-          'userId_1_title_1', 
-          'title_1_userId_1',
-          'title_1',
-          'userId_1_title_1_unique'
-        ];
-        
-        // Attempt to drop each index
-        for (const indexName of indexesToDrop) {
-          try {
-            await db.collection('goals').dropIndex(indexName);
-            console.log(`Successfully deleted index: ${indexName}`);
-          } catch (err) {
-            console.log(`Attempted to delete index ${indexName}: ${err.message}`);
-          }
+      // Attempt to drop each index
+      for (const indexName of indexesToDrop) {
+        try {
+          await db.collection('goals').dropIndex(indexName);
+          console.log(`Successfully deleted index: ${indexName}`);
+        } catch (err) {
+          console.log(`Attempted to delete index ${indexName}: ${err.message}`);
         }
-        
-        // Create new non-unique index
+      }
+      
+      // Create new non-unique index
+      try {
         await db.collection('goals').createIndex(
           { userId: 1, title: 1 }, 
           { unique: false, background: true }
         );
         console.log("Successfully rebuilt non-unique index");
-      } else {
-        console.log("Goals collection does not exist yet, skipping index cleanup");
+      } catch (createIndexError) {
+        console.warn("Failed to create new index:", createIndexError.message);
       }
-      
-    } catch (indexError) {
-      console.log("Error during index processing:", indexError.message);
-      // Continue execution, don't block server startup due to index issues
+    } else {
+      console.log("Goals collection does not exist yet, skipping index cleanup");
     }
     
-    // Check if port is in use and try alternative ports
-    const startServer = (port) => {
-      try {
-        const server = app.listen(port, () => {
-          console.log(`Server is running on port ${port}!`);
-        });
-        
-        server.on('error', (error) => {
-          if (error.code === 'EADDRINUSE') {
-            console.log(`Port ${port} is in use, trying ${port + 1}`);
-            startServer(port + 1);
-          } else {
-            console.error('Server error:', error);
-          }
-        });
-      } catch (error) {
-        console.error('Server startup error:', error);
-      }
-    };
-    
-    startServer(PORT);
-  })
-  .catch((error) => {
-    console.error("Error connecting to MongoDB:", error);
-  });
+  } catch (indexError) {
+    console.warn("Error during index processing:", indexError.message);
+    console.warn("Continuing server startup despite index issues...");
+  }
+  
+  // Start server after successful MongoDB connection and index operations
+  const startServer = (port) => {
+    try {
+      const server = app.listen(port, () => {
+        console.log(`Server is running on port ${port}!`);
+        console.log("MongoDB connection status:", mongoose.connection.readyState === 1 ? "Connected" : "Disconnected");
+      });
+      
+      server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+          console.log(`Port ${port} is in use, trying ${port + 1}`);
+          startServer(port + 1);
+        } else {
+          console.error('Server error:', error);
+        }
+      });
+    } catch (error) {
+      console.error('Server startup error:', error);
+    }
+  };
+  
+  startServer(PORT);
+});
+
+mongoose.connection.on('error', (error) => {
+  console.error('MongoDB connection error:', error);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected');
+});

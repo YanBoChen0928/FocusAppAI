@@ -1,12 +1,22 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import ProfileModal from "../components/ProfileModal";
-import OnboardingModal from "../components/OnboardingModal";
+import { useUserStore } from "../store/userStore";
+import apiService from "../services/api";
 import Header from "../components/Header/Header";
 import Sidebar from "../components/Sidebar/Sidebar";
 import GoalDetails from "../components/GoalDetails/GoalDetails";
 import ProgressReport from "../components/ProgressReport/ProgressReport";
-import apiService from "../services/api";
+import ProfileModal from "../components/ProfileModal";
+import OnboardingModal from "../components/OnboardingModal";
+
+// Import MUI icons and components for reminder
+import InfoIcon from '@mui/icons-material/Info';
+import LooksOneIcon from '@mui/icons-material/LooksOne';
+import LooksTwoIcon from '@mui/icons-material/LooksTwo';
+import Looks3Icon from '@mui/icons-material/Looks3';
+import StarIcon from '@mui/icons-material/Star';
+import { Box, Typography, Chip } from '@mui/material';
+
 import "../styles/Home.css";
 
 /**
@@ -501,6 +511,137 @@ function Home() {
         handleLogout={handleLogout}
         toggleProfileModal={toggleProfileModal}
       />
+
+      {/* Usage Guide Reminder Container - Above main-content */}
+      {user && (
+        <Box 
+          sx={{ 
+            width: '95vw',
+            margin: '0 auto',
+            px: { xs: 1.5, sm: 2, md: 2.5 },
+            mb: { xs: 1, sm: 1.5, md: 2 }
+          }}
+        >
+          <Box 
+            sx={{ 
+              p: { xs: 1.5, sm: 2 },
+              backgroundColor: 'rgba(13, 94, 109, 0.05)',
+              borderRadius: 2,
+              border: '1px solid rgba(13, 94, 109, 0.1)',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Title Row */}
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                mb: 1.5,
+                gap: 1
+              }}
+            >
+              <InfoIcon sx={{ color: '#0D5E6D', fontSize: 20 }} />
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  color: '#0D5E6D', 
+                  fontWeight: 600,
+                  fontSize: { xs: '0.9rem', sm: '1rem' }
+                }}
+              >
+                Quick Start Guide
+              </Typography>
+            </Box>
+
+            {/* Steps Row */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' }, 
+              gap: { xs: 1, sm: 1.5, md: 2 }, 
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+              mb: 1
+            }}>
+              <Chip 
+                icon={<LooksOneIcon />}
+                label="Add Goals (Left Panel)"
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  color: '#0D5E6D', 
+                  borderColor: '#0D5E6D',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: 'auto',
+                  whiteSpace: 'nowrap'
+                }}
+              />
+              <Chip 
+                icon={<LooksTwoIcon />}
+                label="Select Goal to View Details (Center Panel)"
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  color: '#0D5E6D', 
+                  borderColor: '#0D5E6D',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: 'auto',
+                  maxWidth: { xs: '100%', sm: 'none' },
+                  '& .MuiChip-label': {
+                    whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                    wordBreak: { xs: 'break-word', sm: 'normal' }
+                  }
+                }}
+              />
+              <Chip 
+                icon={<Looks3Icon />}
+                label="Complete Daily Records for AI Analysis (Right Panel)"
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  color: '#0D5E6D', 
+                  borderColor: '#0D5E6D',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  minWidth: 'auto',
+                  maxWidth: { xs: '100%', sm: 'none' },
+                  '& .MuiChip-label': {
+                    whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                    wordBreak: { xs: 'break-word', sm: 'normal' }
+                  }
+                }}
+              />
+            </Box>
+
+            {/* Bonus Row */}
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'flex-start',
+              mt: 0.5
+            }}>
+              <Chip 
+                icon={<StarIcon />}
+                label="Try the FAB (Floating Action Button at the bottom right corner) for deeper planning. The button will appear after you generate your first AI progress analysis"
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 127, 102, 0.1)', 
+                  color: '#FF7F66',
+                  borderColor: '#FF7F66',
+                  border: '1px solid',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  maxWidth: '100%',
+                  height: 'auto',
+                  '& .MuiChip-label': {
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    lineHeight: 1.3,
+                    py: 0.5
+                  }
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       <div className="main-content">
         {user ? (

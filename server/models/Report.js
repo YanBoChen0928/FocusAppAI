@@ -83,9 +83,73 @@ const ReportSchema = new mongoose.Schema(
       start: Date,
       end: Date,
     },
+    embedding: {
+      type: [Number],
+      sparse: true,
+      index: true,
+      description: "Vector embedding for RAG functionality",
+      default: undefined,
+      validate: {
+        validator: function(v) {
+          if (v === undefined || v === null) return true;
+          return Array.isArray(v) && v.length === 1536;
+        },
+        message: 'Embedding must have exactly 1536 dimensions when provided!'
+      }
+    },
+    memos: [{
+      phase: {
+        type: String,
+        enum: ['originalMemo', 'aiDraft', 'finalMemo', 'nextWeekPlan'], // Support 4 phases for future expansion
+        required: true
+      },
+      content: { 
+        type: String, 
+        required: true 
+      },
+      timestamp: { 
+        type: Date, 
+        default: Date.now 
+      },
+      embedding: {
+        type: [Number],
+        default: undefined,
+        validate: {
+          validator: function(v) {
+            if (v === undefined || v === null) return true;
+            return Array.isArray(v) && v.length === 1536;
+          },
+          message: 'Memo embedding must have exactly 1536 dimensions when provided!'
+        }
+      }
+    }]
   },
   {
     collection: "reports",
+  }
+);
+
+// Add vector search index
+ReportSchema.index(
+  { embedding: "vector" },
+  {
+    name: "reportEmbeddings",
+    vectorSearchOptions: {
+      numDimensions: 1536,
+      similarity: "cosine"
+    }
+  }
+);
+
+// Add vector index for memos.embedding
+ReportSchema.index(
+  { "memos.embedding": "vector" },
+  {
+    name: "memoEmbeddings",
+    vectorSearchOptions: {
+      numDimensions: 1536,
+      similarity: "cosine"
+    }
   }
 );
 

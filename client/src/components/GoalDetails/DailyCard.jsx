@@ -5,6 +5,7 @@ import styles from './DailyCard.module.css';
 import DailyCardRecord from './DailyCardRecord';
 import apiService from '../../services/api';
 import useRewardsStore from '../../store/rewardsStore';
+import { fromUTC, parseISOToLocal } from '../../utils/dateUtils';
 
 /**
  * DailyCard - Displays a single date's card showing task completion status
@@ -44,8 +45,8 @@ export default function DailyCard({ card, goal, isToday, onUpdate, onViewDeclara
         return '--';
       }
       
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
+      const date = parseISOToLocal(dateString);
+      if (!date) {
         console.error('Invalid date:', dateString);
         return '--';
       }
@@ -64,8 +65,8 @@ export default function DailyCard({ card, goal, isToday, onUpdate, onViewDeclara
         return '--';
       }
       
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
+      const date = parseISOToLocal(dateString);
+      if (!date) {
         console.error('Invalid day:', dateString);
         return '--';
       }
@@ -194,7 +195,7 @@ export default function DailyCard({ card, goal, isToday, onUpdate, onViewDeclara
           flexDirection: 'column',
           justifyContent: 'space-between',
           boxSizing: 'border-box',
-          height: {xs: '120px', sm: '140px', md: '150px'},
+          minHeight: {xs: '120px', sm: '140px', md: '150px'},
           margin: 0
         }}
       >

@@ -40,6 +40,7 @@ import apiService from '../../services/api';
 import { toast } from 'react-hot-toast';
 import useRewardsStore from '../../store/rewardsStore';
 import useMainTaskStore from '../../store/mainTaskStore';
+import { fromUTC, parseISOToLocal, formatDisplayDate as formatDateWithTimezone } from '../../utils/dateUtils';
 
 /**
  * DailyCardRecord component displays and manages a daily card with tasks, rewards, and progress records
@@ -72,8 +73,8 @@ export default function DailyCardRecord({
   const formatDisplayDate = (dateString) => {
     if (!dateString) return '';
     
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
+    const date = parseISOToLocal(dateString);
+    if (!date) return dateString;
     
     const month = date.getMonth() + 1;
     const day = date.getDate();
@@ -84,12 +85,13 @@ export default function DailyCardRecord({
   
   // Add a separate function for date comparison
   const getSimpleDateString = (dateObj) => {
-    if (!dateObj || !(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+    const date = parseISOToLocal(dateObj);
+    if (!date) {
       return '';
     }
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}${month}${day}`;
   };
 
@@ -173,10 +175,14 @@ export default function DailyCardRecord({
     const zustandMainTask = goalId ? getMainTask(goalId) : null;
     console.log('From Zustand store - main task:', zustandMainTask);
     
-    // Check if there's an existing card for this date
-    const existingCard = goal.dailyCards?.find(card => 
-      card.date && formatDisplayDate(new Date(card.date)) === formatDisplayDate(new Date(date))
-    );
+    // Check if there's an existing card for this date using timezone-aware comparison
+    const existingCard = goal.dailyCards?.find(card => {
+      if (!card.date) return false;
+      const cardDate = parseISOToLocal(card.date);
+      const targetDate = parseISOToLocal(date);
+      return cardDate && targetDate && 
+             getSimpleDateString(cardDate) === getSimpleDateString(targetDate);
+    });
 
     // 确保 taskCompletions 对象存在
     const taskCompletions = existingCard?.taskCompletions || {};
@@ -1186,7 +1192,17 @@ export default function DailyCardRecord({
           
           {/* Existing Records */}
           {Array.isArray(cardData.records) && cardData.records.length > 0 ? (
-            <Paper variant="outlined" sx={{ mb: 2, maxHeight: '200px', overflow: 'auto' }}>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                p: 2, 
+                height: 'fit-content',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                backgroundColor: 'transparent'
+              }}
+            >
               <List dense>
                 {cardData.records.map((record, index) => (
                   <ListItem key={index}>

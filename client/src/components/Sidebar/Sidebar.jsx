@@ -14,6 +14,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import FolderIcon from "@mui/icons-material/Folder";
+import LooksOneIcon from "@mui/icons-material/LooksOne";
 import GoalCard from "./GoalCard";
 import OnboardingModal from "../OnboardingModal";
 import Search from "./Search";
@@ -169,19 +170,24 @@ export default function Sidebar({
 
   return (
     <Box
+      className={styles.sidebar}
       sx={{
-        width: "300px",
-        height: "100vh",
-        bgcolor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        flexDirection: "column",
-        p: 2,
+        width: '100%',
+        height: 'fit-content',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        '& > *': {
+          maxWidth: '100%',
+          boxSizing: 'border-box'
+        },
         ...sx
       }}
     >
-      <Typography variant="h6" sx={{ mb: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+        <LooksOneIcon sx={{ mr: 1, fontSize: '1.2rem', color: '#0D5E6D' }} />
         Goals
       </Typography>
 
@@ -204,7 +210,19 @@ export default function Sidebar({
 
       <Divider sx={{ mb: 2 }} />
 
-      <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflowY: "auto",
+        overflowX: "hidden",
+        width: '100%',
+        boxSizing: 'border-box',
+        '& > div': {
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          overflowX: 'hidden'
+        }
+      }}>
         {isLoading && <CircularProgress sx={{ display: 'block', margin: 'auto' }} />}
         {error && <Alert severity="error">{error}</Alert>}
         {!isLoading && !error && (
@@ -220,6 +238,12 @@ export default function Sidebar({
                   key={goal._id || goal.id}
                   onClick={() => onGoalSelect(goal)}
                   className={activeGoalId === (goal._id || goal.id) ? styles.goalCardSelected : ""}
+                  style={{
+                    width: '100%',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                    overflow: 'hidden'
+                  }}
                 >
                   <GoalCard
                     goal={goal}
@@ -259,6 +283,12 @@ export default function Sidebar({
                           key={goal._id || goal.id}
                           onClick={() => onGoalSelect(goal)}
                           className={activeGoalId === (goal._id || goal.id) ? styles.goalCardSelected : ""}
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden'
+                          }}
                         >
                           <GoalCard
                             goal={goal}
