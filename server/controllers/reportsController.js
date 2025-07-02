@@ -168,7 +168,7 @@ export const generateReport = async (req, res) => {
           endDate.setHours(23, 59, 59, 999);
           startDate = new Date(now);
           startDate.setHours(0, 0, 0, 0);
-          startDate.setDate(startDate.getDate() - 7);
+          startDate.setDate(startDate.getDate() - 6);
           break;
         case 'today':
           startDate = new Date(now.setHours(0, 0, 0, 0));
@@ -179,7 +179,7 @@ export const generateReport = async (req, res) => {
           endDate.setHours(23, 59, 59, 999);
           startDate = new Date(now);
           startDate.setHours(0, 0, 0, 0);
-          startDate.setDate(startDate.getDate() - 7);
+          startDate.setDate(startDate.getDate() - 6);
       }
     } else if (timeRange?.startDate && timeRange?.endDate) {
       // Handle custom date range with proper timezone handling
@@ -193,7 +193,7 @@ export const generateReport = async (req, res) => {
       endDate.setHours(23, 59, 59, 999);
       startDate = new Date();
       startDate.setHours(0, 0, 0, 0);
-      startDate.setDate(startDate.getDate() - 7);
+      startDate.setDate(startDate.getDate() - 6);
     }
     
     console.log(`Using date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
