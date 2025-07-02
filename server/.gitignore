@@ -5,3 +5,7 @@
 node_modules
 
 # ... existing code ... br
+
+*.txt
+
+.DS_Store

@@ -224,6 +224,17 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
           }
         }));
         
+        // Add event dispatch for nextWeekPlan phase
+        if (phase === 'nextWeekPlan') {
+          window.dispatchEvent(new CustomEvent('nextWeekPlanUpdated', {
+            detail: {
+              reportId: reportId,
+              content: content,
+              timestamp: new Date().toISOString()
+            }
+          }));
+        }
+        
         setSuccess(`${phases.find(p => p.key === phase).label} saved successfully!`);
         setEditingPhase(null);
         
@@ -304,11 +315,23 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
       const response = await apiService.reports.memos.generateNextWeekPlan(reportId);
       
       if (response.data.success) {
+        const newContent = response.data.data.content;
+        const newTimestamp = new Date().toISOString();
+        
         setMemos(prev => ({
           ...prev,
           nextWeekPlan: {
-            content: response.data.data.content,
-            timestamp: new Date().toISOString()
+            content: newContent,
+            timestamp: newTimestamp
+          }
+        }));
+        
+        // Directly dispatch event without setTimeout
+        window.dispatchEvent(new CustomEvent('nextWeekPlanUpdated', {
+          detail: {
+            reportId: reportId,
+            content: newContent,
+            timestamp: newTimestamp
           }
         }));
         
@@ -408,14 +431,28 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
                     )}
                   </CardContent>
                 </Card>
-                <Button
-                  variant="outlined"
-                  onClick={() => handleEdit(phase)}
-                  startIcon={<EditIcon />}
-                  disabled={loading}
-                >
-                  Edit
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleEdit(phase)}
+                    startIcon={<EditIcon />}
+                    disabled={loading}
+                  >
+                    Edit
+                  </Button>
+                  {/* Add Regenerate button for AI Draft and Next Week Planning */}
+                  {(phase === 'aiDraft' || phase === 'nextWeekPlan') && (
+                    <Button
+                      variant="contained"
+                      onClick={phase === 'aiDraft' ? handleGenerateAiDraft : handleGenerateNextWeekPlan}
+                      startIcon={loading ? <CircularProgress size={16} /> : <AutoAwesomeIcon />}
+                      disabled={loading || (phase === 'aiDraft' && !memos.originalMemo.content) || (phase === 'nextWeekPlan' && !(memos.originalMemo.content || memos.aiDraft.content || memos.finalMemo.content))}
+                      color="secondary"
+                    >
+                      Regenerate
+                    </Button>
+                  )}
+                </Box>
               </Box>
             ) : (
               <Box>
@@ -615,9 +652,10 @@ function DraggableFabContainer({
 
 export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
   const [open, setOpen] = useState(false);
-  const [hasNextWeekPlan, setHasNextWeekPlan] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hasNextWeekPlan, setHasNextWeekPlan] = useState(false);
   const [nextWeekContent, setNextWeekContent] = useState('');
+  const [hasRecentUpdate, setHasRecentUpdate] = useState(false);
   
   // DND state management
   const [isDragging, setIsDragging] = useState(false);
@@ -645,74 +683,67 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
     }
   };
 
+  // Handle Next Week Plan updates
+  useEffect(() => {
+    const handleNextWeekPlanUpdate = (event) => {
+      const { reportId: eventReportId, content, timestamp } = event.detail;
+      
+      // Only update if the event is for the current report
+      if (eventReportId === reportId && content) {
+        console.log('[WeeklyMemoFab] Received Next Week Plan update event:', { reportId: eventReportId, contentLength: content.length });
+        setHasNextWeekPlan(true);
+        setNextWeekContent(content);
+        setExpanded(true); // Auto-expand when new content is generated
+        setHasRecentUpdate(true); // Mark that we have a recent update
+      }
+    };
+    
+    // Add event listener for Next Week Plan updates
+    window.addEventListener('nextWeekPlanUpdated', handleNextWeekPlanUpdate);
+    
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener('nextWeekPlanUpdated', handleNextWeekPlanUpdate);
+    };
+  }, [reportId]);
+
   // Reset position when FAB is closed
   const handleFabClose = () => {
     setOpen(false);
-    // Optionally reset position when closing
-    // setDragPosition({ x: 0, y: 0 });
     
-    // Re-check Next Week Plan status after dialog closes to sync UI
-    const checkNextWeekPlan = async () => {
-      if (reportId) {
-        try {
-          const response = await apiService.reports.memos.list(reportId);
-          if (response.data.success) {
-            const nextWeekPlan = response.data.data.memos.find(memo => 
-              memo.phase === 'nextWeekPlan' && memo.content
-            );
-            
-            if (nextWeekPlan) {
-              setHasNextWeekPlan(true);
-              setNextWeekContent(nextWeekPlan.content);
-              setExpanded(true); // Auto-expand when content exists
-            } else {
-              setHasNextWeekPlan(false);
-              setNextWeekContent('');
-              setExpanded(false); // Show icon when no content
+    // Only check database if there's no recent update
+    if (!hasRecentUpdate) {
+      const checkNextWeekPlan = async () => {
+        if (reportId) {
+          try {
+            const response = await apiService.reports.memos.list(reportId);
+            if (response.data.success) {
+              const nextWeekPlan = response.data.data.memos.find(memo => 
+                memo.phase === 'nextWeekPlan' && memo.content
+              );
+              
+              if (nextWeekPlan) {
+                setHasNextWeekPlan(true);
+                setNextWeekContent(nextWeekPlan.content);
+                setExpanded(true);
+              } else {
+                setHasNextWeekPlan(false);
+                setNextWeekContent('');
+                setExpanded(false);
+              }
             }
+          } catch (error) {
+            console.error('[WeeklyMemoFab] Failed to check Next Week Plan:', error);
           }
-        } catch (error) {
-          console.error('[WeeklyMemoFab] Failed to re-check Next Week Plan after dialog close:', error);
         }
-      }
-    };
+      };
+      
+      setTimeout(checkNextWeekPlan, 300);
+    }
     
-    // Re-check after a short delay to ensure dialog operations are completed
-    setTimeout(checkNextWeekPlan, 300);
+    // Reset the update flag for next time
+    setHasRecentUpdate(false);
   };
-
-  // Check if Next Week Plan exists and get content
-  useEffect(() => {
-    const checkNextWeekPlan = async () => {
-      if (reportId) {
-        try {
-          const response = await apiService.reports.memos.list(reportId);
-          if (response.data.success) {
-            const nextWeekPlan = response.data.data.memos.find(memo => 
-              memo.phase === 'nextWeekPlan' && memo.content
-            );
-            
-            if (nextWeekPlan) {
-              setHasNextWeekPlan(true);
-              setNextWeekContent(nextWeekPlan.content);
-              setExpanded(true); // Auto-expand when content exists
-            } else {
-              setHasNextWeekPlan(false);
-              setNextWeekContent('');
-              setExpanded(false); // Show icon when no content
-            }
-          }
-        } catch (error) {
-          console.error('[WeeklyMemoFab] Failed to check Next Week Plan:', error);
-          setHasNextWeekPlan(false);
-          setNextWeekContent('');
-          setExpanded(false);
-        }
-      }
-    };
-
-    checkNextWeekPlan();
-  }, [reportId]);
 
   const handleMainFabClick = () => {
     if (!disabled) {
