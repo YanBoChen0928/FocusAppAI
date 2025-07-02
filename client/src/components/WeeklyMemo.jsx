@@ -650,6 +650,35 @@ export const WeeklyMemoFab = ({ reportId, disabled = false }) => {
     setOpen(false);
     // Optionally reset position when closing
     // setDragPosition({ x: 0, y: 0 });
+    
+    // Re-check Next Week Plan status after dialog closes to sync UI
+    const checkNextWeekPlan = async () => {
+      if (reportId) {
+        try {
+          const response = await apiService.reports.memos.list(reportId);
+          if (response.data.success) {
+            const nextWeekPlan = response.data.data.memos.find(memo => 
+              memo.phase === 'nextWeekPlan' && memo.content
+            );
+            
+            if (nextWeekPlan) {
+              setHasNextWeekPlan(true);
+              setNextWeekContent(nextWeekPlan.content);
+              setExpanded(true); // Auto-expand when content exists
+            } else {
+              setHasNextWeekPlan(false);
+              setNextWeekContent('');
+              setExpanded(false); // Show icon when no content
+            }
+          }
+        } catch (error) {
+          console.error('[WeeklyMemoFab] Failed to re-check Next Week Plan after dialog close:', error);
+        }
+      }
+    };
+    
+    // Re-check after a short delay to ensure dialog operations are completed
+    setTimeout(checkNextWeekPlan, 300);
   };
 
   // Check if Next Week Plan exists and get content
