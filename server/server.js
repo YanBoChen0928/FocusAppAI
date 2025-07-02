@@ -200,41 +200,41 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Handle MongoDB connection events
 mongoose.connection.once('open', async () => {
-  console.log("Connected to MongoDB successfully!");
-  
+    console.log("Connected to MongoDB successfully!");
+    
   // Handle collection indexes - db is now guaranteed to be available
-  try {
-    const db = mongoose.connection.db;
-    console.log("Start checking and removing all possible unique indexes...");
-    
+    try {
+      const db = mongoose.connection.db;
+      console.log("Start checking and removing all possible unique indexes...");
+      
     // List collections - db is now properly initialized
-    const collections = await db.listCollections().toArray();
-    const goalsCollectionExists = collections.some(col => col.name === 'goals');
-    
-    if (goalsCollectionExists) {
-      // Get all indexes on the goals collection
-      const indexes = await db.collection('goals').indexes();
-      console.log("Existing indexes:", JSON.stringify(indexes));
+      const collections = await db.listCollections().toArray();
+      const goalsCollectionExists = collections.some(col => col.name === 'goals');
       
-      // Define indexes to be dropped
-      const indexesToDrop = [
-        'userId_1_title_1', 
-        'title_1_userId_1',
-        'title_1',
-        'userId_1_title_1_unique'
-      ];
-      
-      // Attempt to drop each index
-      for (const indexName of indexesToDrop) {
-        try {
-          await db.collection('goals').dropIndex(indexName);
-          console.log(`Successfully deleted index: ${indexName}`);
-        } catch (err) {
-          console.log(`Attempted to delete index ${indexName}: ${err.message}`);
+      if (goalsCollectionExists) {
+        // Get all indexes on the goals collection
+        const indexes = await db.collection('goals').indexes();
+        console.log("Existing indexes:", JSON.stringify(indexes));
+        
+        // Define indexes to be dropped
+        const indexesToDrop = [
+          'userId_1_title_1', 
+          'title_1_userId_1',
+          'title_1',
+          'userId_1_title_1_unique'
+        ];
+        
+        // Attempt to drop each index
+        for (const indexName of indexesToDrop) {
+          try {
+            await db.collection('goals').dropIndex(indexName);
+            console.log(`Successfully deleted index: ${indexName}`);
+          } catch (err) {
+            console.log(`Attempted to delete index ${indexName}: ${err.message}`);
+          }
         }
-      }
-      
-      // Create new non-unique index
+        
+        // Create new non-unique index
       try {
         await db.collection('goals').createIndex(
           { userId: 1, title: 1 }, 
@@ -244,37 +244,37 @@ mongoose.connection.once('open', async () => {
       } catch (createIndexError) {
         console.warn("Failed to create new index:", createIndexError.message);
       }
-    } else {
-      console.log("Goals collection does not exist yet, skipping index cleanup");
-    }
-    
-  } catch (indexError) {
+      } else {
+        console.log("Goals collection does not exist yet, skipping index cleanup");
+      }
+      
+    } catch (indexError) {
     console.warn("Error during index processing:", indexError.message);
     console.warn("Continuing server startup despite index issues...");
-  }
-  
-  // Start server after successful MongoDB connection and index operations
-  const startServer = (port) => {
-    try {
-      const server = app.listen(port, () => {
-        console.log(`Server is running on port ${port}!`);
-        console.log("MongoDB connection status:", mongoose.connection.readyState === 1 ? "Connected" : "Disconnected");
-      });
-      
-      server.on('error', (error) => {
-        if (error.code === 'EADDRINUSE') {
-          console.log(`Port ${port} is in use, trying ${port + 1}`);
-          startServer(port + 1);
-        } else {
-          console.error('Server error:', error);
-        }
-      });
-    } catch (error) {
-      console.error('Server startup error:', error);
     }
-  };
-  
-  startServer(PORT);
+    
+  // Start server after successful MongoDB connection and index operations
+    const startServer = (port) => {
+      try {
+        const server = app.listen(port, () => {
+          console.log(`Server is running on port ${port}!`);
+        console.log("MongoDB connection status:", mongoose.connection.readyState === 1 ? "Connected" : "Disconnected");
+        });
+        
+        server.on('error', (error) => {
+          if (error.code === 'EADDRINUSE') {
+            console.log(`Port ${port} is in use, trying ${port + 1}`);
+            startServer(port + 1);
+          } else {
+            console.error('Server error:', error);
+          }
+        });
+      } catch (error) {
+        console.error('Server startup error:', error);
+      }
+    };
+    
+    startServer(PORT);
 });
 
 mongoose.connection.on('error', (error) => {
@@ -283,4 +283,4 @@ mongoose.connection.on('error', (error) => {
 
 mongoose.connection.on('disconnected', () => {
   console.log('MongoDB disconnected');
-});
+  });

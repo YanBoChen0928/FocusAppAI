@@ -660,9 +660,9 @@ We plan to enhance the application with the following features:
 
 ## Contributors
 
-- Ryan Tian
 - Yanbo Chen
 - Neda Changizi - Instructor
+- Issam Laradji - Instructor
 
 ## License
 
