@@ -271,7 +271,7 @@ const WeeklyMemo = ({ reportId, onClose, open }) => {
     try {
       setLoading(true);
       setError('');
-      
+      // check if the original memo is empty
       if (!memos.originalMemo.content) {
         setError('Please create an original memo first');
         return;
